@@ -34,4 +34,42 @@ void main() {
     expect(find.text('EN LECTURE'), findsOneWidget);
     expect(find.byIcon(Icons.skip_next_rounded), findsWidgets);
   });
+
+  testWidgets('Les paroles s\'ouvrent depuis le lecteur', (WidgetTester tester) async {
+    await tester.pumpWidget(const BeninVibesApp());
+    await tester.pump();
+
+    await tester.tap(find.text('Passer'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(MiniPlayer));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Afficher les paroles'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('PAROLES'), findsOneWidget);
+    expect(find.text('La nuit tombe sur Cotonou'), findsOneWidget);
+    expect(find.text('Zinli Night'), findsWidgets);
+  });
+
+  testWidgets('La file d\'attente s\'ouvre depuis le lecteur',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const BeninVibesApp());
+    await tester.pump();
+
+    await tester.tap(find.text('Passer'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(MiniPlayer));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip("Afficher la file d'attente"));
+    await tester.pumpAndSettle();
+
+    expect(find.text("FILE D'ATTENTE"), findsOneWidget);
+    expect(find.text('À SUIVRE'), findsOneWidget);
+    expect(find.text('EN LECTURE'), findsOneWidget);
+    expect(find.text('Cotonou Vibes'), findsWidgets);
+  });
 }
