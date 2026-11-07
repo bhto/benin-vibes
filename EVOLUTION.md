@@ -53,12 +53,16 @@ Sections défilantes :
   et 0.9 sur les voisines, photo plein cadre, badge jaune et bouton « Écouter »
 - Mix du jour : grande carte teintée avec pochette et accès direct à la lecture
 - Nouveautés : pochettes carrées avec ombre teintée, titre et artiste
-- Artistes populaires : avatars ronds cerclés de la couleur de l'artiste
+- Artistes populaires : avatars ronds cerclés de la couleur de l'artiste.
+  Un appui ouvre la fiche de l'artiste avec tous ses morceaux disponibles ;
+  l'utilisateur choisit celui qu'il veut lancer.
 
 ### 3. Mini-lecteur
 Barre en verre dépoli flottant au-dessus de la navigation, visible sur tous les
-onglets : pochette, titre, artiste, bouton play/pause blanc, bouton suivant et
-fine barre de progression verte. Un tap ouvre le lecteur plein écran.
+onglets **dès qu'un morceau a été choisi** : pochette, titre, artiste, bouton
+play/pause blanc, bouton suivant et fine barre de progression verte. Un tap
+ouvre le lecteur plein écran. Au premier lancement, il reste masqué tant que
+l'utilisateur n'a pas sélectionné de musique.
 
 ### 3 bis. Lecteur plein écran (« En lecture »)
 Feuille modale qui sort du bas, fond dégradé de la teinte de l'artiste, grand
@@ -81,9 +85,12 @@ Un appui long sur un titre des nouveautés ou de la bibliothèque l'insère just
 après le morceau en cours (« lire ensuite »).
 
 ### 4. Découvrir (3e onglet)
-Barre de recherche en verre et grille de genres colorés (Zinli, Afrobeat,
-Gospel, Vodoun Jazz, Tchink System, Rumba, Highlife, Hip-hop), suivie d'un
-rail « Artistes à suivre ».
+Barre de recherche fonctionnelle (titre, artiste, genre, insensible aux accents)
+et grille de toutes les catégories de la base (Afro-folk, Afropop, Gospel,
+Traditionnel, World, Tchink System), avec le nombre de titres par genre. Un
+appui ouvre la fiche du genre : liste de ses morceaux et bouton « Tout lire »
+qui charge toute la catégorie dans la file d'attente. Sans résultat, la
+recherche propose quelques titres au hasard, écoutables sans quitter la vue.
 
 ### 5. Bibliothèque
 Onglets Favoris, Playlists et Téléchargés (indicateur vert). Liste de titres
@@ -91,20 +98,20 @@ numérotés avec pochette, titre, artiste et menu « ⋯ » ; états vides soign
 pour les playlists et téléchargements.
 
 ## État actuel
-Refonte premium terminée : thème sombre Outfit, onboarding animé, shell (header,
-navigation flottante en verre, mini-lecteur glass), accueil (carrousel, mix,
-nouveautés, artistes), Découvrir, Bibliothèque, lecteur plein écran, paroles
-synchronisées et file d'attente. Photos d'artistes embarquées dans
-`assets/artists/` (crédits dans `assets/artists/ATTRIBUTIONS.md`), teinte propre
-à chaque artiste. L'architecture Supabase Storage est cadrée dans
-`SUPABASE_NOTES.md`.
+Application fonctionnelle hors ligne : thème sombre Outfit, onboarding animé,
+shell (header, navigation flottante en verre, mini-lecteur glass), accueil
+(carrousel aléatoire, mix, nouveautés, artistes), fiches artistes, fiches
+genres avec « Tout lire », Découvrir,
+Bibliothèque, lecteur plein écran, paroles synchronisées et file d'attente.
+Bibliothèque SQLite (artistes, genres, morceaux) et 37 MP3 embarqués dans
+`assets/audio/`, lus avec `just_audio`. L'architecture est décrite dans
+`AUDIO_NOTES.md`.
 
 Fichiers : main.dart, theme.dart, data.dart, disc_sleeve.dart,
-onboarding_page.dart, home_shell.dart, now_playing_sheet.dart,
-player_controller.dart
+onboarding_page.dart, home_shell.dart, artist_page.dart, genre_page.dart,
+now_playing_sheet.dart, player_controller.dart.
 
 ## Prochaines étapes
-1. Brancher `PlayerController` sur just_audio (le lecteur est aujourd'hui simulé)
-2. Création de la base SQLite et branchement sur l'accueil et la bibliothèque
-3. Remplacer les données de démo par les vrais titres et pochettes
-4. Image de Gnonnas Pedro (aucune photo libre trouvée pour l'instant)
+1. Favoris et playlists persistants
+2. Lecture en arrière-plan et contrôles système (`audio_service`)
+3. Images d'artistes manquantes (Gnonnas Pedro)

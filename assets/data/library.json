@@ -1,0 +1,542 @@
+{
+    "genres":  [
+                   {
+                       "slug":  "afro-folk",
+                       "name":  "Afro-folk",
+                       "color":  "#2FB36D",
+                       "icon":  "nature_people"
+                   },
+                   {
+                       "slug":  "afropop",
+                       "name":  "Afropop",
+                       "color":  "#E0447C",
+                       "icon":  "album"
+                   },
+                   {
+                       "slug":  "gospel",
+                       "name":  "Gospel",
+                       "color":  "#6A4CFF",
+                       "icon":  "church"
+                   },
+                   {
+                       "slug":  "traditionnel",
+                       "name":  "Traditionnel",
+                       "color":  "#E8833A",
+                       "icon":  "festival"
+                   },
+                   {
+                       "slug":  "world",
+                       "name":  "World",
+                       "color":  "#00A3A3",
+                       "icon":  "public"
+                   },
+                   {
+                       "slug":  "tchink",
+                       "name":  "Tchink System",
+                       "color":  "#D93A4A",
+                       "icon":  "waves"
+                   }
+               ],
+    "artists":  [
+                    {
+                        "slug":  "afafa",
+                        "name":  "Afafa",
+                        "cover_path":  "assets/covers/afafa.jpg",
+                        "tint":  "#E0447C"
+                    },
+                    {
+                        "slug":  "angelique_kidjo",
+                        "name":  "Angélique Kidjo",
+                        "cover_path":  "assets/covers/angelique_kidjo.jpg",
+                        "tint":  "#E8833A"
+                    },
+                    {
+                        "slug":  "anna_teko",
+                        "name":  "Anna Teko",
+                        "cover_path":  "assets/covers/anna_teko.jpg",
+                        "tint":  "#6A4CFF"
+                    },
+                    {
+                        "slug":  "baba_jahla",
+                        "name":  "Baba Jahla",
+                        "cover_path":  "assets/covers/baba_jahla.jpg",
+                        "tint":  "#00A3A3"
+                    },
+                    {
+                        "slug":  "johnny_sourou",
+                        "name":  "Johnny Sourou",
+                        "cover_path":  "assets/covers/johnny_sourou.jpg",
+                        "tint":  "#D93A4A"
+                    },
+                    {
+                        "slug":  "kiri_kanta",
+                        "name":  "Kiri Kanta",
+                        "cover_path":  "assets/covers/kiri_kanta.jpg",
+                        "tint":  "#B8860B"
+                    },
+                    {
+                        "slug":  "onel_mala",
+                        "name":  "Onel Mala",
+                        "cover_path":  "assets/covers/onel_mala.jpg",
+                        "tint":  "#8B5CF6"
+                    },
+                    {
+                        "slug":  "petit_miguelito",
+                        "name":  "Petit Miguelito",
+                        "cover_path":  "assets/covers/petit_miguelito.jpg",
+                        "tint":  "#4E77B8"
+                    },
+                    {
+                        "slug":  "sagbohan",
+                        "name":  "Sagbohan Danialou",
+                        "cover_path":  "assets/covers/sagbohan.jpg",
+                        "tint":  "#2E7D32"
+                    }
+                ],
+    "tracks":  [
+                   {
+                       "id":  "afafa_ne_jamais_reculer",
+                       "title":  "Ne Jamais Réculer",
+                       "artist":  "afafa",
+                       "genre":  "afro-folk",
+                       "duration_seconds":  261,
+                       "audio_path":  "audio/afafa_ne_jamais_reculer.mp3",
+                       "cover_path":  "assets/covers/afafa.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  0
+                   },
+                   {
+                       "id":  "afafa_tchite",
+                       "title":  "Tchité",
+                       "artist":  "afafa",
+                       "genre":  "tchink",
+                       "duration_seconds":  262,
+                       "audio_path":  "audio/afafa_tchite.mp3",
+                       "cover_path":  "assets/covers/afafa.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  1
+                   },
+                   {
+                       "id":  "afafa_alafia",
+                       "title":  "ALAFIA",
+                       "artist":  "afafa",
+                       "genre":  "afro-folk",
+                       "duration_seconds":  290,
+                       "audio_path":  "audio/afafa_alafia.mp3",
+                       "cover_path":  "assets/covers/afafa.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  2
+                   },
+                   {
+                       "id":  "angelique_kidjo_agolo",
+                       "title":  "Agolo",
+                       "artist":  "angelique_kidjo",
+                       "genre":  "afropop",
+                       "duration_seconds":  244,
+                       "audio_path":  "audio/angelique_kidjo_agolo.mp3",
+                       "cover_path":  "assets/covers/angelique_kidjo.jpg",
+                       "lyrics_path":  "assets/lyrics/angelique_kidjo_agolo.json",
+                       "lyrics_synced":  true,
+                       "position":  3
+                   },
+                   {
+                       "id":  "angelique_kidjo_batonga",
+                       "title":  "Batonga",
+                       "artist":  "angelique_kidjo",
+                       "genre":  "afropop",
+                       "duration_seconds":  227,
+                       "audio_path":  "audio/angelique_kidjo_batonga.mp3",
+                       "cover_path":  "assets/covers/angelique_kidjo.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  4
+                   },
+                   {
+                       "id":  "angelique_kidjo_malaika_africa_live_in_dakar",
+                       "title":  "Malaika - Africa Live in Dakar",
+                       "artist":  "angelique_kidjo",
+                       "genre":  "world",
+                       "duration_seconds":  211,
+                       "audio_path":  "audio/angelique_kidjo_malaika_africa_live_in_dakar.mp3",
+                       "cover_path":  "assets/covers/angelique_kidjo.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  5
+                   },
+                   {
+                       "id":  "angelique_kidjo_wombo_lombo",
+                       "title":  "Wombo Lombo",
+                       "artist":  "angelique_kidjo",
+                       "genre":  "afropop",
+                       "duration_seconds":  225,
+                       "audio_path":  "audio/angelique_kidjo_wombo_lombo.mp3",
+                       "cover_path":  "assets/covers/angelique_kidjo.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  6
+                   },
+                   {
+                       "id":  "anna_teko_au_pied_de_ta_croix",
+                       "title":  "AU PIED DE TA CROIX",
+                       "artist":  "anna_teko",
+                       "genre":  "gospel",
+                       "duration_seconds":  288,
+                       "audio_path":  "audio/anna_teko_au_pied_de_ta_croix.mp3",
+                       "cover_path":  "assets/covers/anna_teko.jpg",
+                       "lyrics_path":  "assets/lyrics/anna_teko_au_pied_de_ta_croix.json",
+                       "lyrics_synced":  true,
+                       "position":  7
+                   },
+                   {
+                       "id":  "anna_teko_roi_mysterieux",
+                       "title":  "Roi Mystérieux",
+                       "artist":  "anna_teko",
+                       "genre":  "gospel",
+                       "duration_seconds":  235,
+                       "audio_path":  "audio/anna_teko_roi_mysterieux.mp3",
+                       "cover_path":  "assets/covers/anna_teko.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  8
+                   },
+                   {
+                       "id":  "anna_teko_shilo",
+                       "title":  "SHILO",
+                       "artist":  "anna_teko",
+                       "genre":  "gospel",
+                       "duration_seconds":  472,
+                       "audio_path":  "audio/anna_teko_shilo.mp3",
+                       "cover_path":  "assets/covers/anna_teko.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  9
+                   },
+                   {
+                       "id":  "baba_jahla_batia_bakam",
+                       "title":  "Batia Bakam",
+                       "artist":  "baba_jahla",
+                       "genre":  "traditionnel",
+                       "duration_seconds":  209,
+                       "audio_path":  "audio/baba_jahla_batia_bakam.mp3",
+                       "cover_path":  "assets/covers/baba_jahla.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  10
+                   },
+                   {
+                       "id":  "baba_jahla_yekidja",
+                       "title":  "Yekidja",
+                       "artist":  "baba_jahla",
+                       "genre":  "traditionnel",
+                       "duration_seconds":  288,
+                       "audio_path":  "audio/baba_jahla_yekidja.mp3",
+                       "cover_path":  "assets/covers/baba_jahla.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  11
+                   },
+                   {
+                       "id":  "baba_jahla_amousoro",
+                       "title":  "Amousoro",
+                       "artist":  "baba_jahla",
+                       "genre":  "traditionnel",
+                       "duration_seconds":  211,
+                       "audio_path":  "audio/baba_jahla_amousoro.mp3",
+                       "cover_path":  "assets/covers/baba_jahla.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  12
+                   },
+                   {
+                       "id":  "baba_jahla_nayihoue",
+                       "title":  "Nayihoué",
+                       "artist":  "baba_jahla",
+                       "genre":  "traditionnel",
+                       "duration_seconds":  293,
+                       "audio_path":  "audio/baba_jahla_nayihoue.mp3",
+                       "cover_path":  "assets/covers/baba_jahla.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  13
+                   },
+                   {
+                       "id":  "johnny_sourou_avimademe",
+                       "title":  "Avimadémè",
+                       "artist":  "johnny_sourou",
+                       "genre":  "gospel",
+                       "duration_seconds":  398,
+                       "audio_path":  "audio/johnny_sourou_avimademe.mp3",
+                       "cover_path":  "assets/covers/johnny_sourou.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  14
+                   },
+                   {
+                       "id":  "johnny_sourou_akonkpikpan",
+                       "title":  "Akonkpikpan",
+                       "artist":  "johnny_sourou",
+                       "genre":  "gospel",
+                       "duration_seconds":  308,
+                       "audio_path":  "audio/johnny_sourou_akonkpikpan.mp3",
+                       "cover_path":  "assets/covers/johnny_sourou.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  15
+                   },
+                   {
+                       "id":  "johnny_sourou_houhlon_te_hounmen",
+                       "title":  "Houhlon Te Hounmen",
+                       "artist":  "johnny_sourou",
+                       "genre":  "gospel",
+                       "duration_seconds":  352,
+                       "audio_path":  "audio/johnny_sourou_houhlon_te_hounmen.mp3",
+                       "cover_path":  "assets/covers/johnny_sourou.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  16
+                   },
+                   {
+                       "id":  "johnny_sourou_menuwe_sogandiwe",
+                       "title":  "Menuwe Sogandiwé",
+                       "artist":  "johnny_sourou",
+                       "genre":  "gospel",
+                       "duration_seconds":  346,
+                       "audio_path":  "audio/johnny_sourou_menuwe_sogandiwe.mp3",
+                       "cover_path":  "assets/covers/johnny_sourou.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  17
+                   },
+                   {
+                       "id":  "johnny_sourou_ogbe_to_jesu_me",
+                       "title":  "Ogbe To Jesu Me",
+                       "artist":  "johnny_sourou",
+                       "genre":  "gospel",
+                       "duration_seconds":  367,
+                       "audio_path":  "audio/johnny_sourou_ogbe_to_jesu_me.mp3",
+                       "cover_path":  "assets/covers/johnny_sourou.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  18
+                   },
+                   {
+                       "id":  "kiri_kanta_gangangan",
+                       "title":  "Gangangan",
+                       "artist":  "kiri_kanta",
+                       "genre":  "afro-folk",
+                       "duration_seconds":  324,
+                       "audio_path":  "audio/kiri_kanta_gangangan.mp3",
+                       "cover_path":  "assets/covers/kiri_kanta.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  19
+                   },
+                   {
+                       "id":  "kiri_kanta_abiti",
+                       "title":  "Abiti",
+                       "artist":  "kiri_kanta",
+                       "genre":  "afro-folk",
+                       "duration_seconds":  400,
+                       "audio_path":  "audio/kiri_kanta_abiti.mp3",
+                       "cover_path":  "assets/covers/kiri_kanta.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  20
+                   },
+                   {
+                       "id":  "kiri_kanta_iyin_mindassan",
+                       "title":  "Iyin Mindassan",
+                       "artist":  "kiri_kanta",
+                       "genre":  "afro-folk",
+                       "duration_seconds":  257,
+                       "audio_path":  "audio/kiri_kanta_iyin_mindassan.mp3",
+                       "cover_path":  "assets/covers/kiri_kanta.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  21
+                   },
+                   {
+                       "id":  "kiri_kanta_la_diva_africaine",
+                       "title":  "La Diva Africaine",
+                       "artist":  "kiri_kanta",
+                       "genre":  "afro-folk",
+                       "duration_seconds":  288,
+                       "audio_path":  "audio/kiri_kanta_la_diva_africaine.mp3",
+                       "cover_path":  "assets/covers/kiri_kanta.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  22
+                   },
+                   {
+                       "id":  "kiri_kanta_sourou",
+                       "title":  "Sourou",
+                       "artist":  "kiri_kanta",
+                       "genre":  "afro-folk",
+                       "duration_seconds":  286,
+                       "audio_path":  "audio/kiri_kanta_sourou.mp3",
+                       "cover_path":  "assets/covers/kiri_kanta.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  23
+                   },
+                   {
+                       "id":  "onel_mala_dieu_est_bon",
+                       "title":  "Dieu est Bon",
+                       "artist":  "onel_mala",
+                       "genre":  "gospel",
+                       "duration_seconds":  304,
+                       "audio_path":  "audio/onel_mala_dieu_est_bon.mp3",
+                       "cover_path":  "assets/covers/onel_mala.jpg",
+                       "lyrics_path":  "assets/lyrics/onel_mala_dieu_est_bon.json",
+                       "lyrics_synced":  true,
+                       "position":  24
+                   },
+                   {
+                       "id":  "onel_mala_lousha",
+                       "title":  "Lousha",
+                       "artist":  "onel_mala",
+                       "genre":  "gospel",
+                       "duration_seconds":  317,
+                       "audio_path":  "audio/onel_mala_lousha.mp3",
+                       "cover_path":  "assets/covers/onel_mala.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  25
+                   },
+                   {
+                       "id":  "onel_mala_vetu_de_gloire",
+                       "title":  "vêtu de Gloire",
+                       "artist":  "onel_mala",
+                       "genre":  "gospel",
+                       "duration_seconds":  456,
+                       "audio_path":  "audio/onel_mala_vetu_de_gloire.mp3",
+                       "cover_path":  "assets/covers/onel_mala.jpg",
+                       "lyrics_path":  "assets/lyrics/onel_mala_vetu_de_gloire.json",
+                       "lyrics_synced":  true,
+                       "position":  26
+                   },
+                   {
+                       "id":  "petit_miguelito_zizi_yawo_kpankeke",
+                       "title":  "ZIZI YAWO KPANKEKE",
+                       "artist":  "petit_miguelito",
+                       "genre":  "afropop",
+                       "duration_seconds":  319,
+                       "audio_path":  "audio/petit_miguelito_zizi_yawo_kpankeke.mp3",
+                       "cover_path":  "assets/covers/petit_miguelito.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  27
+                   },
+                   {
+                       "id":  "petit_miguelito_petit_a_petit",
+                       "title":  "PETIT A PETIT",
+                       "artist":  "petit_miguelito",
+                       "genre":  "afropop",
+                       "duration_seconds":  345,
+                       "audio_path":  "audio/petit_miguelito_petit_a_petit.mp3",
+                       "cover_path":  "assets/covers/petit_miguelito.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  28
+                   },
+                   {
+                       "id":  "petit_miguelito_c_est_avec_plaisir",
+                       "title":  "C\u0027est avec plaisir",
+                       "artist":  "petit_miguelito",
+                       "genre":  "afropop",
+                       "duration_seconds":  300,
+                       "audio_path":  "audio/petit_miguelito_c_est_avec_plaisir.mp3",
+                       "cover_path":  "assets/covers/petit_miguelito.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  29
+                   },
+                   {
+                       "id":  "petit_miguelito_comme_ami",
+                       "title":  "Comme ami",
+                       "artist":  "petit_miguelito",
+                       "genre":  "afropop",
+                       "duration_seconds":  242,
+                       "audio_path":  "audio/petit_miguelito_comme_ami.mp3",
+                       "cover_path":  "assets/covers/petit_miguelito.jpg",
+                       "lyrics_path":  "assets/lyrics/petit_miguelito_comme_ami.json",
+                       "lyrics_synced":  false,
+                       "position":  30
+                   },
+                   {
+                       "id":  "petit_miguelito_gbemeho",
+                       "title":  "Gbèmèho",
+                       "artist":  "petit_miguelito",
+                       "genre":  "afropop",
+                       "duration_seconds":  245,
+                       "audio_path":  "audio/petit_miguelito_gbemeho.mp3",
+                       "cover_path":  "assets/covers/petit_miguelito.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  31
+                   },
+                   {
+                       "id":  "sagbohan_tres_incorrecte",
+                       "title":  "TRES INCORRECTE",
+                       "artist":  "sagbohan",
+                       "genre":  "traditionnel",
+                       "duration_seconds":  405,
+                       "audio_path":  "audio/sagbohan_tres_incorrecte.mp3",
+                       "cover_path":  "assets/covers/sagbohan.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  32
+                   },
+                   {
+                       "id":  "sagbohan_adjimevi",
+                       "title":  "Adjimèvi",
+                       "artist":  "sagbohan",
+                       "genre":  "traditionnel",
+                       "duration_seconds":  215,
+                       "audio_path":  "audio/sagbohan_adjimevi.mp3",
+                       "cover_path":  "assets/covers/sagbohan.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  33
+                   },
+                   {
+                       "id":  "sagbohan_amon_noude_houn_dou",
+                       "title":  "Amon Noudé Houn Dou",
+                       "artist":  "sagbohan",
+                       "genre":  "traditionnel",
+                       "duration_seconds":  421,
+                       "audio_path":  "audio/sagbohan_amon_noude_houn_dou.mp3",
+                       "cover_path":  "assets/covers/sagbohan.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  34
+                   },
+                   {
+                       "id":  "sagbohan_mari_incapable",
+                       "title":  "Mari Incapable",
+                       "artist":  "sagbohan",
+                       "genre":  "traditionnel",
+                       "duration_seconds":  485,
+                       "audio_path":  "audio/sagbohan_mari_incapable.mp3",
+                       "cover_path":  "assets/covers/sagbohan.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  35
+                   },
+                   {
+                       "id":  "sagbohan_zemihin",
+                       "title":  "Zémihin",
+                       "artist":  "sagbohan",
+                       "genre":  "traditionnel",
+                       "duration_seconds":  340,
+                       "audio_path":  "audio/sagbohan_zemihin.mp3",
+                       "cover_path":  "assets/covers/sagbohan.jpg",
+                       "lyrics_path":  null,
+                       "lyrics_synced":  false,
+                       "position":  36
+                   }
+               ]
+}

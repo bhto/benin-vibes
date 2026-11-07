@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+
 import 'data.dart';
 import 'player_controller.dart';
 import 'theme.dart';
@@ -39,10 +40,10 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
   PlayerController get player => widget.player;
 
   String get _panelTitle => switch (_panel) {
-        _Panel.artwork => 'EN LECTURE',
-        _Panel.lyrics => 'PAROLES',
-        _Panel.queue => "FILE D'ATTENTE",
-      };
+    _Panel.artwork => 'EN LECTURE',
+    _Panel.lyrics => 'PAROLES',
+    _Panel.queue => "FILE D'ATTENTE",
+  };
 
   String _format(Duration d) {
     final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
@@ -56,8 +57,14 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
     });
   }
 
+  /// Légère avance (100 ms) pour compenser le temps de transition visuelle
+  /// et aligner parfaitement l'illumination du texte avec la voix.
+  static const _kSyncOffset = Duration(milliseconds: 100);
+
   int _activeIndex(List<LyricLine> lines) {
-    final position = player.position;
+    if (lines.isEmpty) return -1;
+    final position = player.position + _kSyncOffset;
+    if (position < lines.first.time) return -1;
     var index = 0;
     for (var i = 0; i < lines.length; i++) {
       if (lines[i].time <= position) {
@@ -73,6 +80,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
       _lineKeys.putIfAbsent(i, () => GlobalKey(debugLabel: 'lyric-$i'));
 
   void _scrollToActive(int index) {
+    if (index < 0) return;
     if (_lastActive == index) return;
     _lastActive = index;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -213,12 +221,24 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                     Expanded(
                       child: Padding(
                         padding: switch (_panel) {
-                          _Panel.artwork =>
-                            const EdgeInsets.fromLTRB(32, 10, 32, 6),
-                          _Panel.lyrics =>
-                            const EdgeInsets.fromLTRB(18, 4, 12, 4),
-                          _Panel.queue =>
-                            const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                          _Panel.artwork => const EdgeInsets.fromLTRB(
+                            32,
+                            10,
+                            32,
+                            6,
+                          ),
+                          _Panel.lyrics => const EdgeInsets.fromLTRB(
+                            18,
+                            4,
+                            12,
+                            4,
+                          ),
+                          _Panel.queue => const EdgeInsets.fromLTRB(
+                            12,
+                            4,
+                            12,
+                            4,
+                          ),
                         },
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 320),
@@ -228,25 +248,27 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                             return FadeTransition(
                               opacity: animation,
                               child: ScaleTransition(
-                                scale: Tween<double>(begin: 0.965, end: 1)
-                                    .animate(animation),
+                                scale: Tween<double>(
+                                  begin: 0.965,
+                                  end: 1,
+                                ).animate(animation),
                                 child: child,
                               ),
                             );
                           },
                           child: switch (_panel) {
                             _Panel.artwork => KeyedSubtree(
-                                key: const ValueKey('artwork'),
-                                child: _buildArtwork(track, tint),
-                              ),
+                              key: const ValueKey('artwork'),
+                              child: _buildArtwork(track, tint),
+                            ),
                             _Panel.lyrics => KeyedSubtree(
-                                key: const ValueKey('lyrics'),
-                                child: _buildLyrics(track),
-                              ),
+                              key: const ValueKey('lyrics'),
+                              child: _buildLyrics(track),
+                            ),
                             _Panel.queue => KeyedSubtree(
-                                key: const ValueKey('queue'),
-                                child: _buildQueue(),
-                              ),
+                              key: const ValueKey('queue'),
+                              child: _buildQueue(),
+                            ),
                           },
                         ),
                       ),
@@ -495,9 +517,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                         decoration: BoxDecoration(
                           color: Colors.black.withAlpha(95),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withAlpha(38),
-                          ),
+                          border: Border.all(color: Colors.white.withAlpha(38)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -561,8 +581,8 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                 upNext.length > 1
                     ? '${upNext.length} titres'
                     : upNext.length == 1
-                        ? '1 titre'
-                        : '',
+                    ? '1 titre'
+                    : '',
                 style: const TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w500,
@@ -693,8 +713,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                       fontFamily: 'Outfit',
                       fontSize: isActive ? 21 : 17,
                       height: 1.5,
-                      fontWeight:
-                          isActive ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                       letterSpacing: isActive ? -0.3 : 0,
                       color: isActive
                           ? AppColors.text
@@ -744,12 +763,7 @@ class _QueueTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Cover(
-                size: 44,
-                radius: 10,
-                image: track.image,
-                tint: track.tint,
-              ),
+              Cover(size: 44, radius: 10, image: track.image, tint: track.tint),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

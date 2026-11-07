@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+
+import 'audio/audio_engine.dart';
+import 'audio/audio_source_resolver.dart';
+import 'data.dart';
 import 'disc_sleeve.dart';
 import 'home_shell.dart';
 import 'theme.dart';
@@ -37,7 +41,16 @@ const _slides = [
 ];
 
 class OnboardingPage extends StatefulWidget {
-  const OnboardingPage({super.key});
+  final Library library;
+  final AudioEngine? audioEngine;
+  final AudioSourceResolver? audioResolver;
+
+  const OnboardingPage({
+    super.key,
+    required this.library,
+    this.audioEngine,
+    this.audioResolver,
+  });
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
@@ -51,7 +64,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   void _finish() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const HomeShell()),
+      MaterialPageRoute(
+        builder: (_) => HomeShell(
+          library: widget.library,
+          audioEngine: widget.audioEngine,
+          audioResolver: widget.audioResolver,
+        ),
+      ),
     );
   }
 
@@ -98,10 +117,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [
-                      AppColors.green.withAlpha(42),
-                      Colors.transparent,
-                    ],
+                    colors: [AppColors.green.withAlpha(42), Colors.transparent],
                   ),
                 ),
               ),

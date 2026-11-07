@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 /// Une pochette d'où sort un vinyle qui tourne.
@@ -30,8 +31,10 @@ class _DiscSleeveState extends State<DiscSleeve> with TickerProviderStateMixin {
     vsync: this,
     duration: const Duration(seconds: 4),
   )..repeat();
-  late final Animation<double> _out =
-      CurvedAnimation(parent: _slide, curve: Curves.easeOutBack);
+  late final Animation<double> _out = CurvedAnimation(
+    parent: _slide,
+    curve: Curves.easeOutBack,
+  );
 
   @override
   void initState() {
