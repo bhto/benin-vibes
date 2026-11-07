@@ -47,4 +47,7 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
-code/
+# Médias locaux (audio et sorties de conversion, jamais versionnés)
+/music_in/
+/music_out/
+
