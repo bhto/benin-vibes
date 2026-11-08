@@ -47,6 +47,8 @@ CREATE TABLE tracks (
   lyrics_path      TEXT,
   lyrics_synced    INTEGER NOT NULL DEFAULT 0
                    CHECK (lyrics_synced IN (0, 1)),
+  liked            INTEGER NOT NULL DEFAULT 0
+                   CHECK (liked IN (0, 1)),
   FOREIGN KEY (artist_id) REFERENCES artists (id)
     ON UPDATE CASCADE ON DELETE RESTRICT,
   FOREIGN KEY (genre_id) REFERENCES genres (id)
@@ -54,6 +56,11 @@ CREATE TABLE tracks (
   UNIQUE (artist_id, title)
 );
 ```
+
+Le schéma est en version 2 : une base version 1 créée par une ancienne
+installation reçoit la colonne `liked` via `onUpgrade`, sans perdre la
+bibliothèque. `MusicRepository.setLiked()` met ce drapeau à jour, et
+`loadLibrary()` le relit dans `Track.liked`.
 
 `PRAGMA foreign_keys = ON` est exécuté à chaque ouverture. Les suppressions
 d'artiste ou de genre encore utilisés sont donc refusées.
@@ -127,6 +134,13 @@ assets/
    avec enchaînement automatique du morceau suivant ;
 4. si aucune source n'est disponible, la progression est simulée pour garder
    l'interface utilisable.
+
+**Cache des assets.** `just_audio` extrait chaque MP3 dans un fichier
+temporaire et ne le remplace pas quand l'APK est mis à jour. Sans nettoyage,
+l'ancienne version d'un morceau peut donc continuer à être lue après une
+recompilation. `JustAudioEngine.clearAssetCache()` est appelé au démarrage
+dans `main.dart` pour supprimer ces copies et forcer la relecture depuis
+l'APK.
 
 Au premier lancement, aucun morceau n'est sélectionné : le mini-lecteur reste
 masqué jusqu'au premier choix de l'utilisateur.

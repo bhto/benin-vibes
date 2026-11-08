@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'audio/audio_engine.dart';
 import 'audio/audio_source_resolver.dart';
 import 'data.dart';
+import 'database/library_repository.dart';
 import 'disc_sleeve.dart';
 import 'home_shell.dart';
 import 'theme.dart';
@@ -42,12 +43,14 @@ const _slides = [
 
 class OnboardingPage extends StatefulWidget {
   final Library library;
+  final MusicRepository? musicRepository;
   final AudioEngine? audioEngine;
   final AudioSourceResolver? audioResolver;
 
   const OnboardingPage({
     super.key,
     required this.library,
+    this.musicRepository,
     this.audioEngine,
     this.audioResolver,
   });
@@ -67,6 +70,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       MaterialPageRoute(
         builder: (_) => HomeShell(
           library: widget.library,
+          musicRepository: widget.musicRepository,
           audioEngine: widget.audioEngine,
           audioResolver: widget.audioResolver,
         ),

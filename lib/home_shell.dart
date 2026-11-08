@@ -7,6 +7,7 @@ import 'audio/audio_engine.dart';
 import 'audio/audio_source_resolver.dart';
 import 'artist_page.dart';
 import 'data.dart';
+import 'database/library_repository.dart';
 import 'genre_page.dart';
 import 'now_playing_sheet.dart';
 import 'player_controller.dart';
@@ -17,12 +18,14 @@ const double _kBottomInset = 190;
 
 class HomeShell extends StatefulWidget {
   final Library library;
+  final MusicRepository? musicRepository;
   final AudioEngine? audioEngine;
   final AudioSourceResolver? audioResolver;
 
   const HomeShell({
     super.key,
     required this.library,
+    this.musicRepository,
     this.audioEngine,
     this.audioResolver,
   });
@@ -50,6 +53,7 @@ class _HomeShellState extends State<HomeShell> {
       tracks: widget.library.tracks,
       engine: widget.audioEngine,
       resolver: widget.audioResolver,
+      repository: widget.musicRepository,
     );
     _greeting = _greetingFor(DateTime.now());
 
@@ -212,6 +216,7 @@ class _HomeShellState extends State<HomeShell> {
                   ),
                   LibraryPage(
                     library: widget.library,
+                    player: _player,
                     onPlay: _player.play,
                     onPlayNext: _playNext,
                   ),
@@ -1759,12 +1764,14 @@ class _GenreTile extends StatelessWidget {
 
 class LibraryPage extends StatefulWidget {
   final Library library;
+  final PlayerController player;
   final void Function(Track) onPlay;
   final void Function(Track) onPlayNext;
 
   const LibraryPage({
     super.key,
     required this.library,
+    required this.player,
     required this.onPlay,
     required this.onPlayNext,
   });
@@ -1815,10 +1822,23 @@ class _LibraryPageState extends State<LibraryPage> {
                   onPlay: widget.onPlay,
                   onPlayNext: widget.onPlayNext,
                 ),
-                const _EmptyState(
-                  icon: Icons.favorite_border_rounded,
-                  title: 'Aucun favori',
-                  message: 'Les titres que tu aimes apparaîtront ici.',
+                AnimatedBuilder(
+                  animation: widget.player,
+                  builder: (context, _) {
+                    final favorites = widget.player.favorites;
+                    if (favorites.isEmpty) {
+                      return const _EmptyState(
+                        icon: Icons.favorite_border_rounded,
+                        title: 'Aucun favori',
+                        message: 'Les titres que tu aimes apparaîtront ici.',
+                      );
+                    }
+                    return _TrackList(
+                      tracks: favorites,
+                      onPlay: widget.onPlay,
+                      onPlayNext: widget.onPlayNext,
+                    );
+                  },
                 ),
                 _ArtistTracks(
                   groups: _groups,

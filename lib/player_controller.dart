@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'audio/audio_engine.dart';
 import 'audio/audio_source_resolver.dart';
 import 'data.dart';
+import 'database/library_repository.dart';
 
 /// État de lecture partagé entre le mini-lecteur, la vue plein écran, les
 /// paroles et la file d'attente.
@@ -17,10 +18,25 @@ class PlayerController extends ChangeNotifier {
   final List<Track> _queue;
   final AudioEngine? _engine;
   final AudioSourceResolver? _resolver;
+  final MusicRepository? _repository;
+
+  /// Tous les morceaux connus, pour retrouver un favori même s'il a quitté la
+  /// file d'attente.
+  final Map<String, Track> _catalog;
+
+  /// Identifiants des morceaux aimés.
+  final Set<String> _liked;
+
+  /// Ordre de la file avant activation du mode aléatoire.
+  List<Track>? _shuffleOrigin;
 
   int _index = 0;
   bool _playing = false;
   bool _selected = false;
+  bool _ended = false;
+  bool _shuffle = false;
+  bool _repeat = false;
+  double _volume = 0.65;
 
   /// Vrai lorsqu'un morceau a déjà été choisi par l'utilisateur.
   ///
@@ -48,14 +64,42 @@ class PlayerController extends ChangeNotifier {
     required List<Track> tracks,
     AudioEngine? engine,
     AudioSourceResolver? resolver,
+    MusicRepository? repository,
   }) : _queue = List<Track>.of(tracks),
+       _catalog = {for (final track in tracks) track.id: track},
+       _liked = {
+         for (final track in tracks)
+           if (track.liked) track.id,
+       },
        _engine = engine,
+       // Le champ privé ne peut pas être un paramètre nommé public.
+       // ignore: prefer_initializing_formals
+       _repository = repository,
        _resolver = engine == null ? null : (resolver ?? AudioSourceResolver()) {
     _bindEngine();
+    _run(_engine?.setVolume(_volume));
   }
 
   Track get track => _queue[_index];
   bool get playing => _playing;
+
+  /// Vrai lorsque le mode aléatoire mélange les titres à venir.
+  bool get shuffle => _shuffle;
+
+  /// Vrai lorsque la file revient au début après le dernier titre.
+  bool get repeat => _repeat;
+
+  /// Volume appliqué au moteur, entre 0 et 1.
+  double get volume => _volume;
+
+  /// Vrai si [track] a été ajouté aux favoris.
+  bool isLiked(Track track) => _liked.contains(track.id);
+
+  /// Les morceaux aimés, dans l'ordre de la bibliothèque.
+  List<Track> get favorites => [
+    for (final track in _catalog.values)
+      if (_liked.contains(track.id)) track,
+  ];
 
   bool get isEmpty => _queue.isEmpty;
 
@@ -171,11 +215,25 @@ class PlayerController extends ChangeNotifier {
       ..clear()
       ..addAll(tracks);
     _index = start < 0 ? 0 : start;
+
+    if (_shuffle) {
+      _shuffleOrigin = List<Track>.of(_queue);
+      final upcoming = _queue.sublist(_index + 1)..shuffle();
+      _queue
+        ..removeRange(_index + 1, _queue.length)
+        ..addAll(upcoming);
+    }
+
     _startCurrent();
   }
 
   void toggle() {
     if (!hasSelection) return;
+    if (_ended) {
+      _index = 0;
+      _startCurrent();
+      return;
+    }
     _playing = !_playing;
     if (_simulated) {
       if (_playing) {
@@ -187,6 +245,71 @@ class PlayerController extends ChangeNotifier {
       _run(_playing ? _engine?.play() : _engine?.pause());
     }
     notifyListeners();
+  }
+
+  /// Active ou coupe le mode aléatoire.
+  ///
+  /// À l'activation, les titres à venir sont mélangés alors que le morceau en
+  /// cours reste en place. À la désactivation, l'ordre d'origine est restauré
+  /// quand il est encore connu.
+  void toggleShuffle() {
+    _shuffle = !_shuffle;
+
+    if (_queue.isNotEmpty) {
+      if (_shuffle) {
+        _shuffleOrigin = List<Track>.of(_queue);
+        final upcoming = _queue.sublist(_index + 1)..shuffle();
+        _queue
+          ..removeRange(_index + 1, _queue.length)
+          ..addAll(upcoming);
+      } else {
+        final origin = _shuffleOrigin;
+        _shuffleOrigin = null;
+        if (origin != null) {
+          final current = track;
+          final position = origin.indexWhere((t) => _same(t, current));
+          if (position >= 0) {
+            _queue
+              ..clear()
+              ..addAll(origin);
+            _index = position;
+          }
+        }
+      }
+    }
+
+    notifyListeners();
+  }
+
+  /// Active ou coupe la répétition de la file.
+  void toggleRepeat() {
+    _repeat = !_repeat;
+    notifyListeners();
+  }
+
+  /// Change le volume du moteur (0 = muet, 1 = maximum).
+  void setVolume(double value) {
+    final next = value.clamp(0.0, 1.0);
+    if (next == _volume) return;
+    _volume = next;
+    _run(_engine?.setVolume(next));
+    notifyListeners();
+  }
+
+  /// Ajoute ou retire le morceau en cours des favoris et persiste le choix.
+  Future<void> toggleLike() async {
+    if (_queue.isEmpty) return;
+    final current = track;
+    if (!_liked.remove(current.id)) _liked.add(current.id);
+    notifyListeners();
+
+    final repository = _repository;
+    if (repository == null) return;
+    try {
+      await repository.setLiked(current.id, _liked.contains(current.id));
+    } catch (error, stack) {
+      debugPrint('Favori non enregistré : $error\n$stack');
+    }
   }
 
   void next() {
@@ -254,6 +377,7 @@ class PlayerController extends ChangeNotifier {
 
   void seek(double value) {
     if (!hasSelection) return;
+    _ended = false;
     final clamped = value.clamp(0.0, 1.0);
     if (_simulated) {
       _simulatedProgress = clamped;
@@ -269,6 +393,7 @@ class PlayerController extends ChangeNotifier {
   void _startCurrent() {
     _selected = true;
     _playing = true;
+    _ended = false;
     _loadCurrent();
     notifyListeners();
   }
@@ -300,6 +425,8 @@ class PlayerController extends ChangeNotifier {
         source.uri,
         isAsset: source.isAsset,
       );
+      if (token != _loadToken) return;
+      await engine.setVolume(_volume);
       if (token != _loadToken) return;
       _engineDuration = loaded;
       _position = Duration.zero;
@@ -333,8 +460,25 @@ class PlayerController extends ChangeNotifier {
 
   void _advance() {
     if (_queue.isEmpty) return;
-    _index = (_index + 1) % _queue.length;
-    _startCurrent();
+
+    if (_index + 1 < _queue.length) {
+      _index += 1;
+      _startCurrent();
+      return;
+    }
+
+    if (_repeat) {
+      _index = 0;
+      _startCurrent();
+      return;
+    }
+
+    // Fin de file sans répétition : on s'arrête sur le dernier titre.
+    _playing = false;
+    _ended = true;
+    _simulatedProgress = 1;
+    _stopTicker();
+    notifyListeners();
   }
 
   void _startTicker() {

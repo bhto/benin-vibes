@@ -84,6 +84,7 @@ class MusicRepository {
           tint: artist.tint,
           lyrics: lyrics,
           lyricsSynced: (row['lyrics_synced'] as int? ?? 0) == 1,
+          liked: (row['liked'] as int? ?? 0) == 1,
           audioPath: row['audio_path'] as String,
           duration: Duration(seconds: row['duration_seconds'] as int? ?? 0),
         ),
@@ -118,13 +119,24 @@ class MusicRepository {
     );
   }
 
+  /// Enregistre l'état « favori » d'un morceau dans SQLite.
+  Future<void> setLiked(String trackId, bool liked) async {
+    await database.database.update(
+      'tracks',
+      {'liked': liked ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [trackId],
+    );
+  }
+
   /// Charge [limit] morceaux tirés au sort dans SQLite avec ORDER BY RANDOM().
   Future<List<Track>> getRandomTracks({
     int limit = 10,
     AssetBundle? bundle,
   }) async {
     final assets = bundle ?? rootBundle;
-    final rows = await database.database.rawQuery('''
+    final rows = await database.database.rawQuery(
+      '''
       SELECT t.*, a.name AS artist_name, a.slug AS artist_slug,
              a.tint AS artist_tint, a.cover_path AS artist_cover,
              g.name AS genre_name, g.slug AS genre_slug
@@ -133,14 +145,13 @@ class MusicRepository {
       JOIN genres g ON g.id = t.genre_id
       ORDER BY RANDOM()
       LIMIT ?
-    ''', [limit]);
+    ''',
+      [limit],
+    );
 
     final results = <Track>[];
     for (final row in rows) {
-      final lyrics = await _loadLyrics(
-        assets,
-        row['lyrics_path'] as String?,
-      );
+      final lyrics = await _loadLyrics(assets, row['lyrics_path'] as String?);
       results.add(
         Track(
           id: row['id'] as String,
@@ -149,10 +160,13 @@ class MusicRepository {
           artistSlug: row['artist_slug'] as String,
           genre: row['genre_name'] as String,
           genreSlug: row['genre_slug'] as String,
-          image: (row['cover_path'] as String?) ?? (row['artist_cover'] as String?),
+          image:
+              (row['cover_path'] as String?) ??
+              (row['artist_cover'] as String?),
           tint: colorFromHex(row['artist_tint'] as String?),
           lyrics: lyrics,
           lyricsSynced: (row['lyrics_synced'] as int? ?? 0) == 1,
+          liked: (row['liked'] as int? ?? 0) == 1,
           audioPath: row['audio_path'] as String,
           duration: Duration(seconds: row['duration_seconds'] as int? ?? 0),
         ),

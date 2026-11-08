@@ -11,6 +11,14 @@ class JustAudioEngine implements AudioEngine {
 
   JustAudioEngine({AudioPlayer? player}) : _player = player ?? AudioPlayer();
 
+  /// Vide le cache d'assets extraits par `just_audio`.
+  ///
+  /// `just_audio` copie chaque asset dans un fichier temporaire et ne le
+  /// remplace jamais, même après une mise à jour de l'APK : sans ce nettoyage,
+  /// un ancien MP3 continue d'être lu. À appeler au démarrage, avant toute
+  /// lecture.
+  static Future<void> clearAssetCache() => AudioPlayer.clearAssetCache();
+
   @override
   Stream<Duration> get positionStream => _player.positionStream;
 
@@ -51,6 +59,9 @@ class JustAudioEngine implements AudioEngine {
 
   @override
   Future<void> seek(Duration position) => _player.seek(position);
+
+  @override
+  Future<void> setVolume(double volume) => _player.setVolume(volume);
 
   @override
   Future<void> stop() => _player.stop();

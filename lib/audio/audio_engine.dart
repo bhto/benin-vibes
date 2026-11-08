@@ -30,6 +30,9 @@ abstract class AudioEngine {
 
   Future<void> seek(Duration position);
 
+  /// Règle le volume de lecture, entre 0 et 1.
+  Future<void> setVolume(double volume);
+
   Future<void> stop();
 
   Future<void> dispose();

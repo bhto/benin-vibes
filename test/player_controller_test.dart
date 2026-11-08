@@ -116,6 +116,68 @@ void main() {
     expect(player.upNext.any((t) => t.id == next.id), isFalse);
   });
 
+  test('toggleShuffle mélange les titres à venir et restaure l\'ordre', () {
+    final tracks = buildTestLibrary().tracks;
+    final player = PlayerController(tracks: tracks);
+    addTearDown(player.dispose);
+
+    final before = player.queue.map((t) => t.id).toList();
+    player.toggleShuffle();
+
+    expect(player.shuffle, isTrue);
+    expect(player.track.id, before.first);
+    expect(player.queue.map((t) => t.id).toSet(), before.toSet());
+    expect(player.upNext, hasLength(tracks.length - 1));
+
+    player.toggleShuffle();
+    expect(player.shuffle, isFalse);
+    expect(player.queue.map((t) => t.id), before);
+    expect(player.track.id, before.first);
+  });
+
+  test('le cœur ajoute et retire un favori sans base de données', () async {
+    final tracks = buildTestLibrary().tracks;
+    final player = PlayerController(tracks: tracks);
+    addTearDown(player.dispose);
+
+    expect(player.isLiked(tracks.first), isFalse);
+    expect(player.favorites, isEmpty);
+
+    await player.toggleLike();
+    expect(player.isLiked(tracks.first), isTrue);
+    expect(player.favorites.single.id, tracks.first.id);
+
+    await player.toggleLike();
+    expect(player.isLiked(tracks.first), isFalse);
+    expect(player.favorites, isEmpty);
+  });
+
+  test('la répétition relance la file après le dernier titre', () async {
+    final tracks = buildTestLibrary().tracks;
+    final engine = FakeAudioEngine()..nextDuration = const Duration(minutes: 3);
+    final player = PlayerController(tracks: tracks, engine: engine);
+    addTearDown(player.dispose);
+
+    player.playCollection(tracks, startAt: tracks.last);
+    await settle();
+    expect(player.repeat, isFalse);
+
+    engine.complete();
+    await settle();
+    expect(player.playing, isFalse);
+    expect(player.track.id, tracks.last.id);
+
+    player.toggleRepeat();
+    expect(player.repeat, isTrue);
+    player.playCollection(tracks, startAt: tracks.last);
+    await settle();
+
+    engine.complete();
+    await settle();
+    expect(player.playing, isTrue);
+    expect(player.track.id, tracks.first.id);
+  });
+
   test('la durée suit le morceau en cours', () {
     final tracks = buildTestLibrary().tracks;
     final player = PlayerController(tracks: tracks);
@@ -227,6 +289,29 @@ void main() {
 
       expect(player.track.id, tracks[1].id);
       expect(engine.lastUrl, endsWith('cotonou_vibes.mp3'));
+    });
+
+    test('le volume est appliqué au moteur et conservé', () async {
+      final player = buildPlayer();
+      addTearDown(player.dispose);
+
+      expect(player.volume, 0.65);
+      expect(engine.volume, 0.65);
+
+      player.setVolume(0.3);
+      await settle();
+
+      expect(player.volume, 0.3);
+      expect(engine.volume, 0.3);
+
+      player.setVolume(1.4);
+      await settle();
+      expect(player.volume, 1);
+      expect(engine.volume, 1);
+
+      player.play(player.queue.first);
+      await settle();
+      expect(engine.volume, 1);
     });
 
     test('sans fichier externe, utilise l\'asset embarqué', () async {

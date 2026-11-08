@@ -70,11 +70,27 @@ halo coloré, pochette plein cadre avec ombre, titre, artiste, favori, slider
 avec temps, contrôles (aléatoire, précédent, play blanc, suivant, répétition)
 et volume.
 
-**Paroles** : un appui sur la pochette (ou sur l'icône « paroles » en haut à
-droite) bascule vers les paroles synchronisées. La ligne en cours est mise en
+**Favoris** : le cœur est actif si le morceau est déjà aimé. Un appui écrit
+la colonne `liked` dans SQLite et le titre rejoint immédiatement l'onglet
+« Favoris » de la Bibliothèque.
+
+**Aléatoire et répétition** : les deux boutons s'illuminent en vert quand ils
+sont actifs. L'aléatoire mélange les titres à venir sans interrompre le morceau
+en cours et restaure l'ordre d'origine quand on le coupe. La répétition renvoie
+au début de la file après le dernier titre ; sans elle, la lecture s'arrête.
+
+**Volume** : le slider du bas règle directement le volume du moteur audio
+(`JustAudioEngine.setVolume`), sans passer par un état local.
+
+**Paroles** : l'icône « paroles » et le badge sur la pochette n'apparaissent
+que si le morceau possède des paroles. Un appui sur la pochette (ou sur
+l'icône) bascule vers les paroles synchronisées. La ligne en cours est mise en
 avant (blanc + barre verte), le reste est estompé. Un appui sur une ligne
-déplace la lecture à cet instant. Les textes embarqués sont des paroles de
-démonstration originales, à remplacer par les textes officiels sous licence.
+déplace la lecture à cet instant. Dès que l'utilisateur fait défiler les
+paroles à la main, le suivi automatique se met en pause et une petite pastille
+« Revenir aux paroles » apparaît pour recentrer la ligne chantée. Les textes
+embarqués sont des paroles de démonstration originales, à remplacer par les
+textes officiels sous licence.
 
 **File d'attente** : l'icône dédiée en haut à droite ouvre le panneau
 « File d'attente ». Le titre en cours y est mis en avant, suivi des titres
@@ -95,8 +111,9 @@ recherche propose quelques titres au hasard, écoutables sans quitter la vue.
 ### 5. Bibliothèque
 Onglets Titres, Favoris et Artistes (indicateur vert). « Titres » liste toute
 la bibliothèque en ordre aléatoire, numérotée avec pochette, titre, artiste et
-genre. « Favoris » affiche pour l'instant un état vide. « Artistes » regroupe
-les titres par artiste, avec les artistes eux-mêmes mélangés.
+genre. « Favoris » reprend les morceaux aimés depuis le lecteur, persistés dans
+la colonne `tracks.liked` de SQLite. « Artistes » regroupe les titres par
+artiste, avec les artistes eux-mêmes mélangés.
 
 ## État actuel
 Application fonctionnelle hors ligne : thème sombre Outfit, onboarding animé,
@@ -104,15 +121,15 @@ shell (header, navigation flottante en verre, mini-lecteur glass), accueil
 (carrousel aléatoire, mix, nouveautés, artistes), fiches artistes, fiches
 genres avec « Tout lire », Découvrir,
 Bibliothèque, lecteur plein écran, paroles synchronisées et file d'attente.
-Bibliothèque SQLite (artistes, genres, morceaux) et 37 MP3 embarqués dans
-`assets/audio/`, lus avec `just_audio`. L'architecture est décrite dans
-`AUDIO_NOTES.md`.
+Bibliothèque SQLite (artistes, genres, morceaux, favoris en version 2 du
+schéma) et 37 MP3 embarqués dans `assets/audio/`, lus avec `just_audio`.
+L'architecture est décrite dans `AUDIO_NOTES.md`.
 
 Fichiers : main.dart, theme.dart, data.dart, disc_sleeve.dart,
 onboarding_page.dart, home_shell.dart, artist_page.dart, genre_page.dart,
 now_playing_sheet.dart, player_controller.dart.
 
 ## Prochaines étapes
-1. Favoris et playlists persistants
+1. Playlists persistantes
 2. Lecture en arrière-plan et contrôles système (`audio_service`)
 3. Images d'artistes manquantes (Gnonnas Pedro)

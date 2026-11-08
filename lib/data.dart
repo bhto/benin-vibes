@@ -26,6 +26,9 @@ class Track {
   final List<LyricLine> lyrics;
   final bool lyricsSynced;
 
+  /// Vrai lorsque le morceau a été ajouté aux favoris (colonne `liked`).
+  final bool liked;
+
   /// Chemin de l'audio dans la bibliothèque, ex.
   /// `audio/angelique_kidjo_agolo.mp3`. Le fichier correspondant est embarqué
   /// dans `assets/audio/`.
@@ -46,6 +49,7 @@ class Track {
     this.tint = AppColors.green,
     this.lyrics = const [],
     this.lyricsSynced = false,
+    this.liked = false,
   });
 
   bool get hasLyrics => lyrics.isNotEmpty;

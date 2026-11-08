@@ -10,33 +10,51 @@ import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final library = await _loadLibrary();
+  await _clearAudioAssetCache();
+  final (repository, library) = await _loadLibrary();
   runApp(
     BeninVibesApp(
       library: library,
+      musicRepository: repository,
       audioEngine: JustAudioEngine(),
       audioResolver: AudioSourceResolver(),
     ),
   );
 }
 
-Future<Library> _loadLibrary() async {
+/// Supprime les anciennes copies de MP3 extraites par `just_audio`.
+///
+/// Son cache ne se met pas à jour tout seul quand un asset est remplacé dans
+/// l'APK : on le vide donc à chaque lancement pour garantir que la version
+/// embarquée est bien celle qui est lue.
+Future<void> _clearAudioAssetCache() async {
+  try {
+    await JustAudioEngine.clearAssetCache();
+  } catch (error, stack) {
+    debugPrint('Cache audio non nettoyé : $error\n$stack');
+  }
+}
+
+Future<(MusicRepository?, Library)> _loadLibrary() async {
   try {
     final repository = await MusicRepository.open();
-    return await repository.loadLibrary();
+    return (repository, await repository.loadLibrary());
   } catch (error, stack) {
     debugPrint('SQLite indisponible, chargement du seed : $error\n$stack');
     try {
-      return await MusicRepository.loadFromSeed();
+      return (null, await MusicRepository.loadFromSeed());
     } catch (fallbackError, fallbackStack) {
       debugPrint('Seed indisponible : $fallbackError\n$fallbackStack');
-      return const Library.empty();
+      return (null, const Library.empty());
     }
   }
 }
 
 class BeninVibesApp extends StatelessWidget {
   final Library library;
+
+  /// Repository SQLite, pour persister les favoris. `null` en test.
+  final MusicRepository? musicRepository;
 
   /// Moteur audio réel. `null` en test : la progression reste simulée.
   final AudioEngine? audioEngine;
@@ -47,6 +65,7 @@ class BeninVibesApp extends StatelessWidget {
   const BeninVibesApp({
     super.key,
     required this.library,
+    this.musicRepository,
     this.audioEngine,
     this.audioResolver,
   });
@@ -59,6 +78,7 @@ class BeninVibesApp extends StatelessWidget {
       theme: buildTheme(),
       home: OnboardingPage(
         library: library,
+        musicRepository: musicRepository,
         audioEngine: audioEngine,
         audioResolver: audioResolver,
       ),

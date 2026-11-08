@@ -110,10 +110,7 @@ class ArtistPage extends StatelessWidget {
                   separatorBuilder: (_, _) => const SizedBox(height: 6),
                   itemBuilder: (context, i) {
                     final track = tracks[i];
-                    return _TrackTile(
-                      track: track,
-                      onTap: () => onPlay(track),
-                    );
+                    return _TrackTile(track: track, onTap: () => onPlay(track));
                   },
                 ),
               ),
@@ -149,12 +146,7 @@ class _TrackTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
           child: Row(
             children: [
-              Cover(
-                size: 52,
-                radius: 12,
-                image: track.image,
-                tint: track.tint,
-              ),
+              Cover(size: 52, radius: 12, image: track.image, tint: track.tint),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

@@ -4,9 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:benin_vibes/audio/audio_source_resolver.dart';
+import 'package:benin_vibes/data.dart';
 import 'package:benin_vibes/genre_page.dart';
 import 'package:benin_vibes/home_shell.dart';
 import 'package:benin_vibes/main.dart';
+import 'package:benin_vibes/now_playing_sheet.dart';
+import 'package:benin_vibes/player_controller.dart';
+import 'package:benin_vibes/theme.dart';
 
 import 'support/fake_audio_engine.dart';
 import 'support/library_fixture.dart';
@@ -294,6 +298,57 @@ void main() {
     expect(find.text('Bienvenue sur Benin Vibes 👋'), findsNothing);
   });
 
+  testWidgets('Le cœur alimente l\'onglet Favoris de la bibliothèque', (
+    WidgetTester tester,
+  ) async {
+    await openHome(tester);
+    await startMix(tester);
+
+    await tester.tap(find.byType(MiniPlayer));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Ajouter aux favoris'), findsOneWidget);
+    await tester.tap(find.byTooltip('Ajouter aux favoris'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Retirer des favoris'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.library_music_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Favoris'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(LibraryPage),
+        matching: find.text('Zinli Night'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Le shuffle et la répétition s\'activent dans le lecteur', (
+    WidgetTester tester,
+  ) async {
+    await openHome(tester);
+    await startMix(tester);
+
+    await tester.tap(find.byType(MiniPlayer));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Lecture aléatoire'), findsOneWidget);
+    await tester.tap(find.byTooltip('Lecture aléatoire'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Désactiver la lecture aléatoire'), findsOneWidget);
+
+    expect(find.byTooltip('Répéter la file'), findsOneWidget);
+    await tester.tap(find.byTooltip('Répéter la file'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Désactiver la répétition'), findsOneWidget);
+  });
+
   testWidgets('Les paroles s\'ouvrent depuis le lecteur', (
     WidgetTester tester,
   ) async {
@@ -309,6 +364,85 @@ void main() {
     expect(find.text('PAROLES'), findsOneWidget);
     expect(find.text('La nuit tombe sur Cotonou'), findsOneWidget);
     expect(find.text('Zinli Night'), findsWidgets);
+  });
+
+  testWidgets('Le défilement manuel met les paroles en pause', (
+    WidgetTester tester,
+  ) async {
+    final track = Track(
+      id: 'paroles_longues',
+      title: 'Paroles longues',
+      artist: 'Artiste test',
+      artistSlug: 'artiste_test',
+      genre: 'Afropop',
+      genreSlug: 'afropop',
+      audioPath: 'audio/paroles_longues.mp3',
+      duration: const Duration(minutes: 4),
+      lyrics: [
+        for (var i = 0; i < 40; i++)
+          LyricLine(Duration(seconds: i * 5), 'Ligne de paroles $i'),
+      ],
+    );
+    final player = PlayerController(tracks: [track]);
+    addTearDown(player.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildTheme(),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showNowPlaying(context, player),
+              child: const Text('Ouvrir le lecteur'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Ouvrir le lecteur'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Afficher les paroles'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Revenir aux paroles'), findsNothing);
+
+    final lyrics = find.descendant(
+      of: find.byType(NowPlayingSheet),
+      matching: find.byType(ListView),
+    );
+    await tester.drag(lyrics, const Offset(0, -240));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Revenir aux paroles'), findsOneWidget);
+
+    await tester.tap(find.text('Revenir aux paroles'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Revenir aux paroles'), findsNothing);
+  });
+
+  testWidgets('Le bouton paroles est masqué sans lyrics', (
+    WidgetTester tester,
+  ) async {
+    await openHome(tester);
+    await startMix(tester);
+
+    await tester.tap(find.byType(MiniPlayer));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Paroles'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NowPlayingSheet),
+        matching: find.byIcon(Icons.skip_next_rounded),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cotonou Vibes'), findsWidgets);
+    expect(find.byTooltip('Afficher les paroles'), findsNothing);
+    expect(find.text('Paroles'), findsNothing);
   });
 
   testWidgets('La file d\'attente s\'ouvre depuis le lecteur', (

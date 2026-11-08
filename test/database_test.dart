@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:benin_vibes/database/app_database.dart';
@@ -137,8 +138,59 @@ void main() {
     expect(agolo.artist, 'Angélique Kidjo');
     expect(agolo.image, 'assets/covers/angelique_kidjo.jpg');
     expect(agolo.lyrics, isNotEmpty);
+    expect(agolo.liked, isFalse);
     expect(library.featuredTracks, hasLength(5));
     expect(library.newReleases, hasLength(10));
+  });
+
+  test('setLiked persiste le favori dans SQLite', () async {
+    final appDb = await openTestDatabase();
+    addTearDown(appDb.close);
+
+    final repo = MusicRepository(appDb);
+    await repo.setLiked('angelique_kidjo_agolo', true);
+
+    final library = await repo.loadLibrary();
+    final agolo = library.tracks.firstWhere(
+      (track) => track.id == 'angelique_kidjo_agolo',
+    );
+    expect(agolo.liked, isTrue);
+    expect(library.tracks.where((track) => track.liked), hasLength(1));
+
+    await repo.setLiked('angelique_kidjo_agolo', false);
+    final refreshed = await repo.loadLibrary();
+    expect(refreshed.tracks.where((track) => track.liked), isEmpty);
+  });
+
+  test('la migration v1 ajoute la colonne liked', () async {
+    final directory = await Directory.systemTemp.createTemp('benin_vibes_db');
+    addTearDown(() async {
+      if (await directory.exists()) await directory.delete(recursive: true);
+    });
+    final path = p.join(directory.path, 'v1.db');
+
+    final legacy = await databaseFactoryFfi.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (db, _) async {
+          await db.execute('CREATE TABLE tracks (id TEXT PRIMARY KEY)');
+        },
+      ),
+    );
+    await legacy.close();
+
+    final appDb = await AppDatabase.open(
+      factory: databaseFactoryFfi,
+      path: path,
+      seed: false,
+    );
+    addTearDown(appDb.close);
+
+    final columns = await appDb.database.rawQuery('PRAGMA table_info(tracks)');
+    final liked = columns.firstWhere((column) => column['name'] == 'liked');
+    expect(liked['notnull'], 1);
+    expect(liked['dflt_value'], '0');
   });
 
   test('getRandomTracks charge des morceaux au hasard depuis SQLite', () async {

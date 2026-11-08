@@ -14,6 +14,7 @@ class FakeAudioEngine implements AudioEngine {
   bool? lastIsAsset;
   Duration? nextDuration;
   Duration? lastSeek;
+  double volume = 1;
   bool isPlaying = false;
   bool stopped = false;
   bool disposed = false;
@@ -57,6 +58,11 @@ class FakeAudioEngine implements AudioEngine {
   Future<void> seek(Duration position) async {
     lastSeek = position;
     _positions.add(position);
+  }
+
+  @override
+  Future<void> setVolume(double volume) async {
+    this.volume = volume;
   }
 
   @override

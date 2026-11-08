@@ -9,15 +9,19 @@ const String kLibrarySeedAsset = 'assets/data/library.json';
 
 /// Base SQLite locale de la bibliothèque.
 ///
-/// Schéma :
+/// Schéma (version 2) :
 /// - `genres` : table de référence des types musicaux ;
 /// - `artists` : artistes séparés des morceaux ;
-/// - `tracks` : morceaux, avec clés étrangères vers `artists` et `genres`.
+/// - `tracks` : morceaux, avec clés étrangères vers `artists` et `genres` et
+///   la colonne `liked` pour les favoris.
 ///
 /// Les contraintes `ON DELETE RESTRICT` empêchent de supprimer un artiste ou
 /// un genre encore utilisé. `PRAGMA foreign_keys = ON` est activé à chaque
 /// ouverture.
 class AppDatabase {
+  /// Version courante du schéma. La 2 ajoute `tracks.liked`.
+  static const int schemaVersion = 2;
+
   final Database database;
 
   AppDatabase._(this.database);
@@ -34,7 +38,7 @@ class AppDatabase {
     final db = await dbFactory.openDatabase(
       dbPath,
       options: OpenDatabaseOptions(
-        version: 1,
+        version: schemaVersion,
         onConfigure: (db) async {
           await db.execute('PRAGMA foreign_keys = ON');
         },
@@ -44,6 +48,14 @@ class AppDatabase {
             final raw =
                 seedJson ?? await rootBundle.loadString(kLibrarySeedAsset);
             await _seed(db, LibrarySeed.decode(raw));
+          }
+        },
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            await db.execute(
+              'ALTER TABLE tracks ADD COLUMN liked INTEGER NOT NULL '
+              'DEFAULT 0 CHECK (liked IN (0, 1))',
+            );
           }
         },
       ),
@@ -88,6 +100,8 @@ class AppDatabase {
         lyrics_path      TEXT,
         lyrics_synced    INTEGER NOT NULL DEFAULT 0
                          CHECK (lyrics_synced IN (0, 1)),
+        liked            INTEGER NOT NULL DEFAULT 0
+                         CHECK (liked IN (0, 1)),
         FOREIGN KEY (artist_id) REFERENCES artists (id)
           ON UPDATE CASCADE ON DELETE RESTRICT,
         FOREIGN KEY (genre_id) REFERENCES genres (id)

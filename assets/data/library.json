@@ -408,10 +408,10 @@
                    },
                    {
                        "id":  "onel_mala_vetu_de_gloire",
-                       "title":  "vêtu de Gloire",
+                       "title":  "Vêtu de Gloire",
                        "artist":  "onel_mala",
                        "genre":  "gospel",
-                       "duration_seconds":  456,
+                       "duration_seconds":  350,
                        "audio_path":  "audio/onel_mala_vetu_de_gloire.mp3",
                        "cover_path":  "assets/covers/onel_mala.jpg",
                        "lyrics_path":  "assets/lyrics/onel_mala_vetu_de_gloire.json",
