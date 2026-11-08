@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -355,6 +356,66 @@ void main() {
       expect(engine.lastUrl, isNull);
       expect(engine.stopped, isTrue);
       expect(player.playing, isTrue);
+    });
+  });
+
+  group('changement de titre pendant un chargement', () {
+    PlayerController buildPlayer(FakeAudioEngine engine) {
+      return PlayerController(
+        tracks: buildTestLibrary().tracks,
+        engine: engine,
+        resolver: AudioSourceResolver(externalDirectory: () async => null),
+      );
+    }
+
+    test(
+      'un état « en pause » du moteur n\'annule pas la lecture voulue',
+      () async {
+        final tracks = buildTestLibrary().tracks;
+        final engine = FakeAudioEngine()
+          ..nextDuration = const Duration(minutes: 3)
+          ..loadGate = Completer<void>();
+        final player = buildPlayer(engine);
+        addTearDown(player.dispose);
+
+        player.play(tracks.first);
+        await settle();
+        expect(player.playing, isTrue);
+
+        engine.emitPlaying(false);
+        await settle();
+        expect(player.playing, isTrue);
+
+        engine.loadGate!.complete();
+        await settle();
+        expect(player.playing, isTrue);
+        expect(engine.isPlaying, isTrue);
+      },
+    );
+
+    test('un changement rapide garde le dernier titre demandé', () async {
+      final tracks = buildTestLibrary().tracks;
+      final engine = FakeAudioEngine()
+        ..nextDuration = const Duration(minutes: 3)
+        ..loadGate = Completer<void>();
+      final player = buildPlayer(engine);
+      addTearDown(player.dispose);
+
+      player.play(tracks.first);
+      await settle();
+      player.play(tracks[1]);
+      await settle();
+
+      expect(player.track.id, tracks[1].id);
+      expect(player.playing, isTrue);
+
+      engine.loadGate!.complete();
+      await settle();
+
+      expect(engine.lastSource, endsWith('cotonou_vibes.mp3'));
+      expect(player.track.id, tracks[1].id);
+      expect(player.playing, isTrue);
+      expect(engine.isPlaying, isTrue);
     });
   });
 }

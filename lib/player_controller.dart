@@ -54,6 +54,12 @@ class PlayerController extends ChangeNotifier {
   /// Incrémenté à chaque chargement pour ignorer les réponses obsolètes.
   int _loadToken = 0;
 
+  /// Vrai pendant le chargement d'une source.
+  ///
+  /// Les événements « lecture en pause » émis par le moteur pendant le
+  /// remplacement d'une piste ne doivent pas annuler l'intention de lecture.
+  bool _loading = false;
+
   Timer? _ticker;
   StreamSubscription<Duration>? _positionSub;
   StreamSubscription<Duration?>? _durationSub;
@@ -168,7 +174,7 @@ class PlayerController extends ChangeNotifier {
     });
 
     _playingSub = engine.playingStream.listen((value) {
-      if (_simulated || value == _playing) return;
+      if (_simulated || _loading || value == _playing) return;
       _playing = value;
       notifyListeners();
     });
@@ -400,6 +406,7 @@ class PlayerController extends ChangeNotifier {
 
   Future<void> _loadCurrent() async {
     final token = ++_loadToken;
+    _loading = true;
     _resetPlayback();
 
     final engine = _engine;
@@ -408,6 +415,7 @@ class PlayerController extends ChangeNotifier {
       _simulated = true;
       _simulatedProgress = 0;
       if (_playing) _startTicker();
+      _loading = false;
       notifyListeners();
       return;
     }
@@ -436,6 +444,8 @@ class PlayerController extends ChangeNotifier {
       debugPrint('Lecture impossible (${track.audioPath}) : $error\n$stack');
       if (token != _loadToken) return;
       _useSimulation(engine);
+    } finally {
+      if (token == _loadToken) _loading = false;
     }
   }
 

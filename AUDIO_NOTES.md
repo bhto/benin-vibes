@@ -135,6 +135,19 @@ assets/
 4. si aucune source n'est disponible, la progression est simulée pour garder
    l'interface utilisable.
 
+**Sur le web**, `just_audio` charge un asset en lisant tout le MP3 avec
+`rootBundle` puis en le convertissant en data URL base64. Pour un fichier de
+plusieurs mégaoctets, ce transfert est lent et deux changements de titre
+rapprochés peuvent se chevaucher : l'ancienne piste continue alors de jouer
+alors que l'interface affiche la nouvelle. `JustAudioEngine` sert donc
+directement l'asset statique (`assets/assets/audio/...`) au navigateur, qui le
+streame. En cas d'URL injouable, il retombe sur `setAsset`.
+
+**Changements de source sérialisés.** `SourceSwitchQueue` exécute un seul
+chargement à la fois et ignore une demande remplacée avant son démarrage. Le
+contrôleur ignore en outre les événements « en pause » émis par le moteur
+pendant un chargement, pour ne pas annuler l'intention de lecture.
+
 **Cache des assets.** `just_audio` extrait chaque MP3 dans un fichier
 temporaire et ne le remplace pas quand l'APK est mis à jour. Sans nettoyage,
 l'ancienne version d'un morceau peut donc continuer à être lue après une

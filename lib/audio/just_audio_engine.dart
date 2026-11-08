@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
 import 'audio_engine.dart';
+import 'source_switch_queue.dart';
+import 'web_asset_url.dart';
 
 /// Moteur audio basé sur `just_audio`.
 ///
@@ -8,6 +11,9 @@ import 'audio_engine.dart';
 /// locaux (`file://...`) et les URL distantes.
 class JustAudioEngine implements AudioEngine {
   final AudioPlayer _player;
+
+  /// Chaque nouvelle source attend la fin du chargement précédent.
+  final SourceSwitchQueue _sources = SourceSwitchQueue();
 
   JustAudioEngine({AudioPlayer? player}) : _player = player ?? AudioPlayer();
 
@@ -36,6 +42,13 @@ class JustAudioEngine implements AudioEngine {
 
   @override
   Future<Duration?> setSource(String source, {bool isAsset = false}) {
+    return _sources.run(() => _load(source, isAsset: isAsset));
+  }
+
+  Future<Duration?> _load(String source, {required bool isAsset}) {
+    if (kIsWeb && (isAsset || source.startsWith('assets/'))) {
+      return _loadWebAsset(source);
+    }
     if (isAsset || source.startsWith('assets/')) {
       return _player.setAsset(source);
     }
@@ -46,6 +59,21 @@ class JustAudioEngine implements AudioEngine {
       return _player.setFilePath(Uri.parse(source).toFilePath());
     }
     return _player.setFilePath(source);
+  }
+
+  /// Charge un asset via son URL HTTP plutôt qu'en data URL base64.
+  ///
+  /// En cas d'échec (chemin ou type MIME inattendu), on retombe sur le
+  /// comportement standard de `just_audio`.
+  Future<Duration?> _loadWebAsset(String source) async {
+    final url = webAssetUrl(source).toString();
+    try {
+      return await _player.setUrl(url);
+    } catch (error) {
+      debugPrint('Asset web injouable ($url) : $error');
+      final key = source.startsWith('assets/') ? source : 'assets/$source';
+      return _player.setAsset(key);
+    }
   }
 
   @override

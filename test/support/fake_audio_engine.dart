@@ -19,6 +19,9 @@ class FakeAudioEngine implements AudioEngine {
   bool stopped = false;
   bool disposed = false;
 
+  /// Quand il est renseigné, [setSource] attend sa complétion.
+  Completer<void>? loadGate;
+
   @override
   Stream<Duration> get positionStream => _positions.stream;
 
@@ -36,6 +39,8 @@ class FakeAudioEngine implements AudioEngine {
     lastSource = source;
     lastIsAsset = isAsset;
     lastUrl = source;
+    final gate = loadGate;
+    if (gate != null) await gate.future;
     return nextDuration;
   }
 
@@ -82,6 +87,9 @@ class FakeAudioEngine implements AudioEngine {
 
   /// Simule une position émise par le moteur.
   void emitPosition(Duration position) => _positions.add(position);
+
+  /// Simule un changement d'état de lecture émis par le moteur.
+  void emitPlaying(bool playing) => _playing.add(playing);
 
   /// Simule la découverte de la durée réelle.
   void emitDuration(Duration duration) => _durations.add(duration);
