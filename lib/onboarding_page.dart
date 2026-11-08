@@ -6,6 +6,7 @@ import 'data.dart';
 import 'database/library_repository.dart';
 import 'disc_sleeve.dart';
 import 'home_shell.dart';
+import 'onboarding_store.dart';
 import 'theme.dart';
 
 class _Slide {
@@ -47,12 +48,16 @@ class OnboardingPage extends StatefulWidget {
   final AudioEngine? audioEngine;
   final AudioSourceResolver? audioResolver;
 
+  /// Enregistre le passage de l'onboarding pour les lancements suivants.
+  final OnboardingStore? onboardingStore;
+
   const OnboardingPage({
     super.key,
     required this.library,
     this.musicRepository,
     this.audioEngine,
     this.audioResolver,
+    this.onboardingStore,
   });
 
   @override
@@ -62,10 +67,15 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   final _controller = PageController();
   int _index = 0;
+  bool _finishing = false;
 
   bool get _isLast => _index == _slides.length - 1;
 
-  void _finish() {
+  Future<void> _finish() async {
+    if (_finishing) return;
+    _finishing = true;
+    await widget.onboardingStore?.markCompleted();
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => HomeShell(

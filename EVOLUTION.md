@@ -10,6 +10,9 @@ Nom provisoire : « Benin Vibes » (« voix » / « langue » en fon/gbe).
 - Musiques : fichiers locaux embarqués (assets/audio/), pas d'API de streaming
 - Base de données : SQLite (sqflite ou drift) pour les infos des morceaux
   (titre, artiste, genre, durée, chemin audio, chemin pochette, favoris, playlists)
+- Icône : `assets/icons/app_icon.svg` (source), déclinée en PNG pour Android
+  (`mipmap-*`) avec une icône adaptative (fond vert + vinyle). Régénération :
+  `tool/generate_icons.ps1` (Edge headless + System.Drawing, sans dépendance).
 - Prérequis : accord des artistes pour la diffusion de leurs titres
 
 ## Thème (premium, façon Apple Music)
@@ -46,6 +49,12 @@ devient active, et rentre quand on la quitte.
 Éléments communs : wordmark « BENIN VIBES », bouton « Passer » en haut à droite
 (masqué au dernier écran), indicateurs de page verts qui s'étirent, bouton
 principal vert avec flèche « Suivant » puis « Commencer ».
+
+Le passage de l'onboarding (bouton « Passer » ou « Commencer ») est enregistré
+dans un marqueur local (`onboarding_store.dart`, fichier du dossier de support
+de l'app). Aux lancements suivants, l'accueil s'ouvre directement, sans
+réafficher les trois écrans. Effacer les données de l'application réactive
+l'onboarding.
 
 ### 2. Accueil
 Sections défilantes :

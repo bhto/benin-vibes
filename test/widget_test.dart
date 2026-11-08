@@ -9,17 +9,38 @@ import 'package:benin_vibes/genre_page.dart';
 import 'package:benin_vibes/home_shell.dart';
 import 'package:benin_vibes/main.dart';
 import 'package:benin_vibes/now_playing_sheet.dart';
+import 'package:benin_vibes/onboarding_store.dart';
 import 'package:benin_vibes/player_controller.dart';
 import 'package:benin_vibes/theme.dart';
 
 import 'support/fake_audio_engine.dart';
 import 'support/library_fixture.dart';
 
-Widget buildTestApp() {
+/// Enregistre l'état sans toucher au système de fichiers.
+class MemoryOnboardingStore implements OnboardingStore {
+  bool completed = false;
+  int marks = 0;
+
+  @override
+  Future<bool> hasCompleted() async => completed;
+
+  @override
+  Future<void> markCompleted() async {
+    completed = true;
+    marks += 1;
+  }
+}
+
+Widget buildTestApp({
+  bool showOnboarding = true,
+  OnboardingStore? onboardingStore,
+}) {
   return BeninVibesApp(
     library: buildTestLibrary(),
     audioEngine: FakeAudioEngine(),
     audioResolver: AudioSourceResolver(externalDirectory: () async => null),
+    showOnboarding: showOnboarding,
+    onboardingStore: onboardingStore,
   );
 }
 
@@ -57,6 +78,32 @@ void main() {
     expect(greetingFinder, findsOneWidget);
     expect(find.text('Accueil'), findsWidgets);
     expect(find.byType(MiniPlayer), findsNothing);
+  });
+
+  testWidgets('Le passage de l\'onboarding est enregistré', (
+    WidgetTester tester,
+  ) async {
+    final store = MemoryOnboardingStore();
+
+    await tester.pumpWidget(buildTestApp(onboardingStore: store));
+    await tester.pump();
+
+    await tester.tap(find.text('Passer'));
+    await tester.pumpAndSettle();
+
+    expect(store.completed, isTrue);
+    expect(store.marks, 1);
+  });
+
+  testWidgets('Sans onboarding, l\'accueil s\'ouvre directement', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(buildTestApp(showOnboarding: false));
+    await tester.pumpAndSettle();
+
+    expect(greetingFinder, findsOneWidget);
+    expect(find.text('Le son du Bénin dans ta poche'), findsNothing);
+    expect(find.text('Passer'), findsNothing);
   });
 
   testWidgets('Le mini-lecteur apparaît après le choix d\'un morceau', (

@@ -5,12 +5,16 @@ import 'audio/audio_source_resolver.dart';
 import 'audio/just_audio_engine.dart';
 import 'data.dart';
 import 'database/library_repository.dart';
+import 'home_shell.dart';
 import 'onboarding_page.dart';
+import 'onboarding_store.dart';
 import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await _clearAudioAssetCache();
+  final onboardingStore = FileOnboardingStore();
+  final onboardingDone = await onboardingStore.hasCompleted();
   final (repository, library) = await _loadLibrary();
   runApp(
     BeninVibesApp(
@@ -18,6 +22,8 @@ Future<void> main() async {
       musicRepository: repository,
       audioEngine: JustAudioEngine(),
       audioResolver: AudioSourceResolver(),
+      showOnboarding: !onboardingDone,
+      onboardingStore: onboardingStore,
     ),
   );
 }
@@ -62,12 +68,21 @@ class BeninVibesApp extends StatelessWidget {
   /// Résolution de l'audio local embarqué (`assets/audio/`).
   final AudioSourceResolver? audioResolver;
 
+  /// Faux lorsque l'onboarding a déjà été parcouru : l'accueil s'ouvre
+  /// directement au lancement.
+  final bool showOnboarding;
+
+  /// Enregistre le passage de l'onboarding pour les lancements suivants.
+  final OnboardingStore? onboardingStore;
+
   const BeninVibesApp({
     super.key,
     required this.library,
     this.musicRepository,
     this.audioEngine,
     this.audioResolver,
+    this.showOnboarding = true,
+    this.onboardingStore,
   });
 
   @override
@@ -76,12 +91,20 @@ class BeninVibesApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Benin Vibes',
       theme: buildTheme(),
-      home: OnboardingPage(
-        library: library,
-        musicRepository: musicRepository,
-        audioEngine: audioEngine,
-        audioResolver: audioResolver,
-      ),
+      home: showOnboarding
+          ? OnboardingPage(
+              library: library,
+              musicRepository: musicRepository,
+              audioEngine: audioEngine,
+              audioResolver: audioResolver,
+              onboardingStore: onboardingStore,
+            )
+          : HomeShell(
+              library: library,
+              musicRepository: musicRepository,
+              audioEngine: audioEngine,
+              audioResolver: audioResolver,
+            ),
     );
   }
 }
