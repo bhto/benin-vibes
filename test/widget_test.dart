@@ -349,6 +349,36 @@ void main() {
     expect(find.byTooltip('Désactiver la répétition'), findsOneWidget);
   });
 
+  testWidgets('Le titre du lecteur reste centré avec ou sans paroles', (
+    WidgetTester tester,
+  ) async {
+    await openHome(tester);
+    await startMix(tester);
+
+    await tester.tap(find.byType(MiniPlayer));
+    await tester.pumpAndSettle();
+
+    final sheet = find.byType(NowPlayingSheet);
+    final center = tester.getCenter(sheet).dx;
+    final title = find.descendant(of: sheet, matching: find.text('EN LECTURE'));
+
+    // Zinli Night possède des paroles : 4 éléments dans l'en-tête.
+    expect(find.byTooltip('Afficher les paroles'), findsOneWidget);
+    expect(tester.getCenter(title).dx, closeTo(center, 1));
+
+    await tester.tap(
+      find.descendant(
+        of: sheet,
+        matching: find.byIcon(Icons.skip_next_rounded),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Cotonou Vibes n'a pas de paroles : 3 éléments dans l'en-tête.
+    expect(find.byTooltip('Afficher les paroles'), findsNothing);
+    expect(tester.getCenter(title).dx, closeTo(center, 1));
+  });
+
   testWidgets('Les paroles s\'ouvrent depuis le lecteur', (
     WidgetTester tester,
   ) async {

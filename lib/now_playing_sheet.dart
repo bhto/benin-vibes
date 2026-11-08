@@ -202,62 +202,89 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: IconButton.styleFrom(
-                              fixedSize: const Size(38, 38),
-                              backgroundColor: Colors.white.withAlpha(14),
-                              foregroundColor: AppColors.text,
-                              side: const BorderSide(color: AppColors.stroke),
-                            ),
-                            icon: const Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 24,
-                            ),
-                          ),
-                          Expanded(
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: Text(
-                                _panelTitle,
-                                key: ValueKey(_panel),
-                                textAlign: TextAlign.center,
-                                style: AppText.eyebrow,
+                      child: SizedBox(
+                        height: 48,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Le titre est centré sur toute la largeur, que le
+                            // bouton Paroles soit présent ou non.
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 96,
+                                ),
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Text(
+                                    _panelTitle,
+                                    key: ValueKey(_panel),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                    style: AppText.eyebrow,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                          IconButton(
-                            tooltip: _panel == _Panel.queue
-                                ? 'Afficher la pochette'
-                                : "Afficher la file d'attente",
-                            onPressed: () => _togglePanel(_Panel.queue),
-                            icon: Icon(
-                              Icons.queue_music_rounded,
-                              size: 21,
-                              color: _panel == _Panel.queue
-                                  ? AppColors.green
-                                  : AppColors.muted,
-                            ),
-                          ),
-                          if (track.hasLyrics)
-                            IconButton(
-                              tooltip: _panel == _Panel.lyrics
-                                  ? 'Afficher la pochette'
-                                  : 'Afficher les paroles',
-                              onPressed: () => _togglePanel(_Panel.lyrics),
-                              icon: Icon(
-                                _panel == _Panel.lyrics
-                                    ? Icons.album_rounded
-                                    : Icons.lyrics_rounded,
-                                size: 22,
-                                color: _panel == _Panel.lyrics
-                                    ? AppColors.green
-                                    : AppColors.muted,
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: IconButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                style: IconButton.styleFrom(
+                                  fixedSize: const Size(38, 38),
+                                  backgroundColor: Colors.white.withAlpha(14),
+                                  foregroundColor: AppColors.text,
+                                  side: const BorderSide(
+                                    color: AppColors.stroke,
+                                  ),
+                                ),
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 24,
+                                ),
                               ),
                             ),
-                        ],
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    tooltip: _panel == _Panel.queue
+                                        ? 'Afficher la pochette'
+                                        : "Afficher la file d'attente",
+                                    onPressed: () => _togglePanel(_Panel.queue),
+                                    icon: Icon(
+                                      Icons.queue_music_rounded,
+                                      size: 21,
+                                      color: _panel == _Panel.queue
+                                          ? AppColors.green
+                                          : AppColors.muted,
+                                    ),
+                                  ),
+                                  if (track.hasLyrics)
+                                    IconButton(
+                                      tooltip: _panel == _Panel.lyrics
+                                          ? 'Afficher la pochette'
+                                          : 'Afficher les paroles',
+                                      onPressed: () =>
+                                          _togglePanel(_Panel.lyrics),
+                                      icon: Icon(
+                                        _panel == _Panel.lyrics
+                                            ? Icons.album_rounded
+                                            : Icons.lyrics_rounded,
+                                        size: 22,
+                                        color: _panel == _Panel.lyrics
+                                            ? AppColors.green
+                                            : AppColors.muted,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     Expanded(
