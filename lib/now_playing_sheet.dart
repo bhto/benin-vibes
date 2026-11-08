@@ -86,10 +86,24 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
       _lineKeys.putIfAbsent(i, () => GlobalKey(debugLabel: 'lyric-$i'));
 
   void _scrollToActive(int index, {bool force = false}) {
-    if (index < 0) return;
+    if (index < 0) {
+      // Avant la première ligne (introduction musicale), le recentrage
+      // ramène simplement en haut de la liste.
+      if (!force) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_lyricsScroll.hasClients) return;
+        _lyricsScroll.animateTo(
+          0,
+          duration: const Duration(milliseconds: 340),
+          curve: Curves.easeOutCubic,
+        );
+      });
+      return;
+    }
     if (!force && _lastActive == index) return;
     _lastActive = index;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final ctx = _lineKeys[index]?.currentContext;
       if (ctx == null) return;
       Scrollable.ensureVisible(
@@ -777,64 +791,21 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
       children: [
         NotificationListener<ScrollNotification>(
           onNotification: _onLyricsScroll,
-          child: ListView.builder(
+          // Toutes les lignes sont construites, même hors écran : sans cela,
+          // une ligne éloignée du viewport n'existe pas dans l'arbre et
+          // « Revenir aux paroles » ne peut pas la recentrer quand le décalage
+          // est important. Une chanson compte quelques dizaines de lignes.
+          child: SingleChildScrollView(
             controller: _lyricsScroll,
             padding: const EdgeInsets.only(top: 6, bottom: 64),
             physics: const BouncingScrollPhysics(),
-            itemCount: lines.length,
-            itemBuilder: (context, i) {
-              final line = lines[i];
-              final isActive = i == active;
-              return GestureDetector(
-                key: _lineKey(i),
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  final total = player.duration.inMilliseconds;
-                  if (total <= 0) return;
-                  player.seek(line.time.inMilliseconds / total);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 7),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeOut,
-                        width: 3,
-                        height: 24,
-                        margin: const EdgeInsets.only(top: 5, right: 14),
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? AppColors.green
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      Expanded(
-                        child: AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOut,
-                          style: TextStyle(
-                            fontFamily: 'Outfit',
-                            fontSize: isActive ? 21 : 17,
-                            height: 1.5,
-                            fontWeight: isActive
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            letterSpacing: isActive ? -0.3 : 0,
-                            color: isActive
-                                ? AppColors.text
-                                : Colors.white.withAlpha(92),
-                          ),
-                          child: Text(line.text),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < lines.length; i++)
+                  _lyricLine(lines[i], i, i == active),
+              ],
+            ),
           ),
         ),
         Positioned(
@@ -891,6 +862,53 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Une ligne de paroles cliquable pour déplacer la lecture à cet instant.
+  Widget _lyricLine(LyricLine line, int index, bool isActive) {
+    return GestureDetector(
+      key: _lineKey(index),
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        final total = player.duration.inMilliseconds;
+        if (total <= 0) return;
+        player.seek(line.time.inMilliseconds / total);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              width: 3,
+              height: 24,
+              margin: const EdgeInsets.only(top: 5, right: 14),
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.green : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Expanded(
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontSize: isActive ? 21 : 17,
+                  height: 1.5,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  letterSpacing: isActive ? -0.3 : 0,
+                  color: isActive ? AppColors.text : Colors.white.withAlpha(92),
+                ),
+                child: Text(line.text),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

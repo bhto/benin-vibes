@@ -438,10 +438,13 @@ void main() {
 
     final lyrics = find.descendant(
       of: find.byType(NowPlayingSheet),
-      matching: find.byType(ListView),
+      matching: find.byType(SingleChildScrollView),
     );
-    await tester.drag(lyrics, const Offset(0, -240));
-    await tester.pumpAndSettle();
+    // Défilement important : la ligne chantée sort largement du viewport.
+    for (var i = 0; i < 5; i++) {
+      await tester.drag(lyrics, const Offset(0, -240));
+      await tester.pumpAndSettle();
+    }
 
     expect(find.text('Revenir aux paroles'), findsOneWidget);
 
@@ -449,6 +452,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Revenir aux paroles'), findsNothing);
+
+    // La ligne en cours est revenue dans la zone visible, même après un
+    // décalage important.
+    final viewport = tester.getRect(lyrics);
+    final activeLine = tester.getRect(find.text('Ligne de paroles 0'));
+    expect(activeLine.top, greaterThanOrEqualTo(viewport.top - 1));
+    expect(activeLine.bottom, lessThanOrEqualTo(viewport.bottom + 1));
   });
 
   testWidgets('Le bouton paroles est masqué sans lyrics', (
