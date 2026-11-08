@@ -1,7 +1,13 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+
+import 'audio/audio_engine.dart';
+import 'audio/audio_source_resolver.dart';
+import 'artist_page.dart';
 import 'data.dart';
+import 'genre_page.dart';
 import 'now_playing_sheet.dart';
 import 'player_controller.dart';
 import 'theme.dart';
@@ -10,7 +16,16 @@ import 'theme.dart';
 const double _kBottomInset = 190;
 
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+  final Library library;
+  final AudioEngine? audioEngine;
+  final AudioSourceResolver? audioResolver;
+
+  const HomeShell({
+    super.key,
+    required this.library,
+    this.audioEngine,
+    this.audioResolver,
+  });
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -18,9 +33,89 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _tab = 0;
-  final _player = PlayerController();
+
+  /// Sens du changement d'onglet : 1 vers la droite, -1 vers la gauche.
+  int _titleDirection = 1;
+
+  late final PlayerController _player;
+  late String _greeting;
+  Timer? _greetingTimer;
 
   static const _titles = ['Accueil', 'Découvrir', 'Bibliothèque'];
+
+  @override
+  void initState() {
+    super.initState();
+    _player = PlayerController(
+      tracks: widget.library.tracks,
+      engine: widget.audioEngine,
+      resolver: widget.audioResolver,
+    );
+    _greeting = _greetingFor(DateTime.now());
+
+    // Le salut suit le moment de la journée sans recréer le Shell.
+    _greetingTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted) return;
+      final next = _greetingFor(DateTime.now());
+      if (next != _greeting) setState(() => _greeting = next);
+    });
+  }
+
+  static String _greetingFor(DateTime time) {
+    final hour = time.hour;
+    if (hour >= 5 && hour < 12) return 'Bonjour 👋';
+    if (hour >= 12 && hour < 18) return 'Bon après-midi ☀️';
+    if (hour >= 18 && hour < 22) return 'Bonsoir 🌙';
+    return 'Bonne nuit 🌙';
+  }
+
+  void _selectTab(int index) {
+    if (index == _tab) return;
+    setState(() {
+      _titleDirection = index > _tab ? 1 : -1;
+      _tab = index;
+    });
+  }
+
+  /// Ouvre la fiche d'un artiste : l'utilisateur choisit lui-même le morceau.
+  void _openArtist(Artist artist) {
+    final tracks = widget.library.tracksForArtist(artist.slug);
+    if (tracks.isEmpty) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ArtistPage(
+          artist: artist,
+          tracks: tracks,
+          onPlay: (track) {
+            _player.playCollection(tracks, startAt: track);
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Ouvre la fiche d'un genre : « Tout lire » ou choix d'un titre.
+  void _openGenre(Genre genre) {
+    final tracks = widget.library.tracksForGenre(genre.slug);
+    if (tracks.isEmpty) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => GenrePage(
+          genre: genre,
+          tracks: tracks,
+          onPlay: (track) {
+            _player.playCollection(tracks, startAt: track);
+            Navigator.of(context).pop();
+          },
+          onPlayAll: () {
+            _player.playCollection(tracks);
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
+  }
 
   void _playNext(Track track) {
     _player.playNext(track);
@@ -36,14 +131,40 @@ class _HomeShellState extends State<HomeShell> {
       );
   }
 
+  /// Affiche la petite vue des notifications (un seul message statique).
+  void _showNotifications() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const _NotificationsSheet(),
+    );
+  }
+
   @override
   void dispose() {
+    _greetingTimer?.cancel();
     _player.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.library.isEmpty) {
+      return const Scaffold(
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: Text(
+              'Aucune musique disponible.\n'
+              'Vérifie le seed de la bibliothèque.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       extendBody: true,
       body: _Backdrop(
@@ -52,34 +173,22 @@ class _HomeShellState extends State<HomeShell> {
             SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 6, 20, 8),
+                padding: const EdgeInsets.fromLTRB(24, 12, 20, 8),
                 child: Row(
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('Bonjour 👋', style: AppText.caption),
-                          const SizedBox(height: 3),
-                          Text(
-                            _titles[_tab],
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppText.title,
-                          ),
-                        ],
+                      child: _AnimatedHeader(
+                        greeting: _greeting,
+                        title: _titles[_tab],
+                        titleIndex: _tab,
+                        direction: _titleDirection,
                       ),
                     ),
                     const SizedBox(width: 12),
                     _GlassIconButton(
-                      icon: Icons.search_rounded,
-                      onTap: () {},
-                    ),
-                    const SizedBox(width: 10),
-                    _GlassIconButton(
                       icon: Icons.notifications_none_rounded,
-                      onTap: () {},
+                      onTap: _showNotifications,
+                      tooltip: 'Notifications',
                       badge: true,
                     ),
                   ],
@@ -87,12 +196,25 @@ class _HomeShellState extends State<HomeShell> {
               ),
             ),
             Expanded(
-              child: IndexedStack(
+              child: _AnimatedIndexedStack(
                 index: _tab,
                 children: [
-                  HomePage(onPlay: _player.play, onPlayNext: _playNext),
-                  DiscoverPage(onPlay: _player.play),
-                  LibraryPage(onPlay: _player.play, onPlayNext: _playNext),
+                  HomePage(
+                    library: widget.library,
+                    onPlay: _player.play,
+                    onPlayNext: _playNext,
+                    onOpenArtist: _openArtist,
+                  ),
+                  DiscoverPage(
+                    library: widget.library,
+                    onPlay: _player.play,
+                    onOpenGenre: _openGenre,
+                  ),
+                  LibraryPage(
+                    library: widget.library,
+                    onPlay: _player.play,
+                    onPlayNext: _playNext,
+                  ),
                 ],
               ),
             ),
@@ -105,16 +227,191 @@ class _HomeShellState extends State<HomeShell> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            MiniPlayer(
-              player: _player,
-              onOpen: () => showNowPlaying(context, _player),
+            AnimatedBuilder(
+              animation: _player,
+              builder: (context, _) {
+                if (!_player.hasSelection) return const SizedBox.shrink();
+                return MiniPlayer(
+                  player: _player,
+                  onOpen: () => showNowPlaying(context, _player),
+                );
+              },
             ),
-            _FloatingNav(
-              index: _tab,
-              onSelect: (i) => setState(() => _tab = i),
-            ),
+            _FloatingNav(index: _tab, onSelect: _selectTab),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ───────────────────────── Header animé ─────────────────────────
+
+/// Salut + titre d'onglet avec entrée en fondu, glissement et transition
+/// directionnelle quand on change de menu.
+class _AnimatedHeader extends StatelessWidget {
+  final String greeting;
+  final String title;
+  final int titleIndex;
+  final int direction;
+
+  const _AnimatedHeader({
+    required this.greeting,
+    required this.title,
+    required this.titleIndex,
+    required this.direction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 16),
+            child: child,
+          ),
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 520),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            layoutBuilder: (currentChild, previousChildren) => Stack(
+              alignment: Alignment.centerLeft,
+              children: [...previousChildren, ?currentChild],
+            ),
+            transitionBuilder: (child, animation) {
+              final incoming = child.key == ValueKey(greeting);
+              return ClipRect(
+                child: FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: Offset(0, incoming ? 0.5 : -0.4),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                ),
+              );
+            },
+            child: Text(
+              greeting,
+              key: ValueKey(greeting),
+              style: AppText.caption.copyWith(
+                color: AppColors.muted,
+                letterSpacing: 0.1,
+              ),
+            ),
+          ),
+          const SizedBox(height: 3),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 420),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            layoutBuilder: (currentChild, previousChildren) => Stack(
+              alignment: Alignment.centerLeft,
+              children: [...previousChildren, ?currentChild],
+            ),
+            transitionBuilder: (child, animation) {
+              final incoming =
+                  child.key == ValueKey('header-title-$titleIndex');
+              return ClipRect(
+                child: FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: Offset(
+                        incoming ? 0.22 * direction : -0.22 * direction,
+                        0,
+                      ),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                ),
+              );
+            },
+            child: Text(
+              title,
+              key: ValueKey('header-title-$titleIndex'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.title,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Garde l'état des pages (scroll, rails) tout en adoucissant le changement
+/// d'onglet par un léger fondu et un glissement vertical.
+class _AnimatedIndexedStack extends StatefulWidget {
+  final int index;
+  final List<Widget> children;
+
+  const _AnimatedIndexedStack({required this.index, required this.children});
+
+  @override
+  State<_AnimatedIndexedStack> createState() => _AnimatedIndexedStackState();
+}
+
+class _AnimatedIndexedStackState extends State<_AnimatedIndexedStack>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 360),
+    value: 1,
+  );
+
+  late final CurvedAnimation _curve = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutCubic,
+  );
+
+  late final Animation<double> _opacity = Tween<double>(
+    begin: 0.35,
+    end: 1,
+  ).animate(_curve);
+
+  late final Animation<Offset> _slide = Tween<Offset>(
+    begin: const Offset(0, 0.012),
+    end: Offset.zero,
+  ).animate(_curve);
+
+  @override
+  void didUpdateWidget(covariant _AnimatedIndexedStack oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.index != widget.index) {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _curve.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: SlideTransition(
+        position: _slide,
+        child: IndexedStack(index: widget.index, children: widget.children),
       ),
     );
   }
@@ -136,11 +433,7 @@ class _Backdrop extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF0C1A13),
-                AppColors.bg,
-                AppColors.bg,
-              ],
+              colors: [Color(0xFF0C1A13), AppColors.bg, AppColors.bg],
               stops: [0, 0.34, 1],
             ),
           ),
@@ -155,10 +448,7 @@ class _Backdrop extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [
-                    AppColors.green.withAlpha(34),
-                    Colors.transparent,
-                  ],
+                  colors: [AppColors.green.withAlpha(34), Colors.transparent],
                 ),
               ),
             ),
@@ -174,17 +464,20 @@ class _GlassIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool badge;
+  final String? tooltip;
 
   const _GlassIconButton({
     required this.icon,
     required this.onTap,
     this.badge = false,
+    this.tooltip,
   });
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: onTap,
+      tooltip: tooltip,
       style: IconButton.styleFrom(
         fixedSize: const Size(42, 42),
         backgroundColor: Colors.white.withAlpha(12),
@@ -202,6 +495,145 @@ class _GlassIconButton extends StatelessWidget {
   }
 }
 
+// ───────────────────────── Notifications ─────────────────────────
+
+class _NotificationsSheet extends StatelessWidget {
+  const _NotificationsSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: AppColors.stroke),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(150),
+                blurRadius: 40,
+                offset: const Offset(0, 18),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(30),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: AppColors.green.withAlpha(26),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.notifications_rounded,
+                      size: 20,
+                      color: AppColors.greenBright,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Notifications',
+                          style: AppText.section.copyWith(fontSize: 18),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '1 message',
+                          style: AppText.caption.copyWith(
+                            color: Colors.white.withAlpha(130),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Fermer',
+                    onPressed: () => Navigator.of(context).pop(),
+                    visualDensity: VisualDensity.compact,
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: Colors.white.withAlpha(160),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(8),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white.withAlpha(14)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      margin: const EdgeInsets.only(top: 5),
+                      decoration: const BoxDecoration(
+                        color: AppColors.greenBright,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Bienvenue sur Benin Vibes 👋',
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Toute la musique béninoise réunie au même endroit. '
+                            'Choisis un morceau et bonne écoute !',
+                            style: AppText.body.copyWith(fontSize: 13.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ───────────────────────── Navigation flottante ─────────────────────────
 
 class _NavSpec {
@@ -214,7 +646,11 @@ class _NavSpec {
 const _navSpecs = [
   _NavSpec(Icons.home_outlined, Icons.home_rounded, 'Accueil'),
   _NavSpec(Icons.explore_outlined, Icons.explore_rounded, 'Découvrir'),
-  _NavSpec(Icons.library_music_outlined, Icons.library_music_rounded, 'Bibliothèque'),
+  _NavSpec(
+    Icons.library_music_outlined,
+    Icons.library_music_rounded,
+    'Bibliothèque',
+  ),
 ];
 
 class _FloatingNav extends StatelessWidget {
@@ -298,7 +734,11 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(selected ? spec.activeIcon : spec.icon, size: 21, color: color),
+            Icon(
+              selected ? spec.activeIcon : spec.icon,
+              size: 21,
+              color: color,
+            ),
             const SizedBox(height: 3),
             Text(
               spec.label,
@@ -324,11 +764,7 @@ class MiniPlayer extends StatelessWidget {
   final PlayerController player;
   final VoidCallback onOpen;
 
-  const MiniPlayer({
-    super.key,
-    required this.player,
-    required this.onOpen,
-  });
+  const MiniPlayer({super.key, required this.player, required this.onOpen});
 
   @override
   Widget build(BuildContext context) {
@@ -470,9 +906,7 @@ class _RoundPlayButton extends StatelessWidget {
         padding: EdgeInsets.zero,
       ),
       iconSize: iconSize,
-      icon: Icon(
-        playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-      ),
+      icon: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded),
     );
   }
 }
@@ -480,27 +914,55 @@ class _RoundPlayButton extends StatelessWidget {
 // ───────────────────────── Accueil ─────────────────────────
 
 class HomePage extends StatelessWidget {
+  final Library library;
   final void Function(Track) onPlay;
   final void Function(Track) onPlayNext;
+  final void Function(Artist) onOpenArtist;
+
   const HomePage({
     super.key,
+    required this.library,
     required this.onPlay,
     required this.onPlayNext,
+    required this.onOpenArtist,
   });
 
   @override
   Widget build(BuildContext context) {
+    final featured = library.featuredTracks.isNotEmpty
+        ? library.featuredTracks
+        : library.tracks.take(5).toList(growable: false);
+    final newReleases = library.newReleases.isNotEmpty
+        ? library.newReleases
+        : library.tracks;
+
     return ListView(
       padding: const EdgeInsets.only(top: 4, bottom: _kBottomInset),
       children: [
-        const _SectionHeader('À la une'),
-        _FeaturedRail(onPlay: onPlay),
-        const _SectionHeader('Mix du jour'),
-        _DailyMix(onPlay: onPlay),
-        const _SectionHeader('Nouveautés'),
-        _NewReleases(onPlay: onPlay, onPlayNext: onPlayNext),
-        const _SectionHeader('Artistes populaires'),
-        _ArtistRail(onPlay: onPlay),
+        if (featured.isNotEmpty) ...[
+          const _SectionHeader('À la une'),
+          _FeaturedRail(tracks: featured, onPlay: onPlay),
+        ],
+        if (library.tracks.isNotEmpty) ...[
+          const _SectionHeader('Mix du jour'),
+          _DailyMix(
+            track: library.tracks.first,
+            artists: library.artists,
+            onPlay: onPlay,
+          ),
+        ],
+        if (newReleases.isNotEmpty) ...[
+          const _SectionHeader('Nouveautés'),
+          _NewReleases(
+            tracks: newReleases,
+            onPlay: onPlay,
+            onPlayNext: onPlayNext,
+          ),
+        ],
+        if (library.artists.isNotEmpty) ...[
+          const _SectionHeader('Artistes populaires'),
+          _ArtistRail(artists: library.artists, onOpen: onOpenArtist),
+        ],
       ],
     );
   }
@@ -508,30 +970,27 @@ class HomePage extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String text;
-  const _SectionHeader(this.text);
+  final EdgeInsetsGeometry padding;
+
+  const _SectionHeader(
+    this.text, {
+    this.padding = const EdgeInsets.fromLTRB(24, 26, 24, 14),
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 26, 24, 14),
-      child: Row(
-        children: [
-          Text(text, style: AppText.section),
-          const Spacer(),
-          Icon(
-            Icons.chevron_right_rounded,
-            size: 20,
-            color: Colors.white.withAlpha(80),
-          ),
-        ],
-      ),
+      padding: padding,
+      child: Text(text, style: AppText.section),
     );
   }
 }
 
 class _FeaturedRail extends StatefulWidget {
+  final List<Track> tracks;
   final void Function(Track) onPlay;
-  const _FeaturedRail({required this.onPlay});
+
+  const _FeaturedRail({required this.tracks, required this.onPlay});
 
   @override
   State<_FeaturedRail> createState() => _FeaturedRailState();
@@ -539,10 +998,12 @@ class _FeaturedRail extends StatefulWidget {
 
 class _FeaturedRailState extends State<_FeaturedRail> {
   static const _viewportFraction = 0.85;
-  static const _cardCount = 3;
 
-  late final PageController _controller =
-      PageController(viewportFraction: _viewportFraction);
+  late final PageController _controller = PageController(
+    viewportFraction: _viewportFraction,
+  );
+
+  int get _cardCount => widget.tracks.length;
 
   @override
   void dispose() {
@@ -563,8 +1024,8 @@ class _FeaturedRailState extends State<_FeaturedRail> {
           return AnimatedBuilder(
             animation: _controller,
             builder: (context, _) {
-              final page = _controller.hasClients &&
-                      _controller.position.haveDimensions
+              final page =
+                  _controller.hasClients && _controller.position.haveDimensions
                   ? _controller.page ?? _controller.initialPage.toDouble()
                   : _controller.initialPage.toDouble();
               final distance = (page - i).abs().clamp(0.0, 1.0);
@@ -578,8 +1039,8 @@ class _FeaturedRailState extends State<_FeaturedRail> {
                   scale: scale,
                   child: RepaintBoundary(
                     child: _FeaturedCard(
-                      track: demoTracks[i],
-                      onPlay: () => widget.onPlay(demoTracks[i]),
+                      track: widget.tracks[i],
+                      onPlay: () => widget.onPlay(widget.tracks[i]),
                     ),
                   ),
                 ),
@@ -652,8 +1113,10 @@ class _FeaturedCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(70),
                     borderRadius: BorderRadius.circular(20),
@@ -687,7 +1150,10 @@ class _FeaturedCard extends StatelessWidget {
                   track.artist,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, color: Color(0xB3FFFFFF)),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xB3FFFFFF),
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Row(
@@ -719,12 +1185,23 @@ class _FeaturedCard extends StatelessWidget {
 }
 
 class _DailyMix extends StatelessWidget {
+  final Track track;
+  final List<Artist> artists;
   final void Function(Track) onPlay;
-  const _DailyMix({required this.onPlay});
+
+  const _DailyMix({
+    required this.track,
+    required this.artists,
+    required this.onPlay,
+  });
+
+  String get _subtitle {
+    final names = artists.take(3).map((artist) => artist.name).toList();
+    return names.isEmpty ? 'Les sons du Bénin' : '${names.join(', ')} et plus';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final track = demoTracks.first;
     final tint = track.tint;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -749,12 +1226,7 @@ class _DailyMix extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Cover(
-                  size: 72,
-                  radius: 18,
-                  image: track.image,
-                  tint: tint,
-                ),
+                Cover(size: 72, radius: 18, image: track.image, tint: tint),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -772,7 +1244,7 @@ class _DailyMix extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'Sessimè, Fanicko, Zeynab et plus',
+                        _subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppText.caption,
@@ -797,21 +1269,28 @@ class _DailyMix extends StatelessWidget {
 }
 
 class _NewReleases extends StatelessWidget {
+  final List<Track> tracks;
   final void Function(Track) onPlay;
   final void Function(Track) onPlayNext;
-  const _NewReleases({required this.onPlay, required this.onPlayNext});
+
+  const _NewReleases({
+    required this.tracks,
+    required this.onPlay,
+    required this.onPlayNext,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (tracks.isEmpty) return const SizedBox.shrink();
     return SizedBox(
       height: 202,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         scrollDirection: Axis.horizontal,
-        itemCount: demoTracks.length,
+        itemCount: tracks.length,
         separatorBuilder: (_, _) => const SizedBox(width: 16),
         itemBuilder: (_, i) {
-          final t = demoTracks[(i + 2) % demoTracks.length];
+          final t = tracks[i];
           return GestureDetector(
             onTap: () => onPlay(t),
             onLongPress: () => onPlayNext(t),
@@ -868,22 +1347,25 @@ class _NewReleases extends StatelessWidget {
 }
 
 class _ArtistRail extends StatelessWidget {
-  final void Function(Track) onPlay;
-  const _ArtistRail({required this.onPlay});
+  final List<Artist> artists;
+  final void Function(Artist) onOpen;
+
+  const _ArtistRail({required this.artists, required this.onOpen});
 
   @override
   Widget build(BuildContext context) {
+    if (artists.isEmpty) return const SizedBox.shrink();
     return SizedBox(
       height: 112,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         scrollDirection: Axis.horizontal,
-        itemCount: demoTracks.length,
+        itemCount: artists.length,
         separatorBuilder: (_, _) => const SizedBox(width: 18),
         itemBuilder: (_, i) {
-          final t = demoTracks[i];
+          final artist = artists[i];
           return GestureDetector(
-            onTap: () => onPlay(t),
+            onTap: () => onOpen(artist),
             behavior: HitTestBehavior.opaque,
             child: Column(
               children: [
@@ -891,10 +1373,13 @@ class _ArtistRail extends StatelessWidget {
                   padding: const EdgeInsets.all(2.5),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: t.tint.withAlpha(130), width: 1.2),
+                    border: Border.all(
+                      color: artist.tint.withAlpha(130),
+                      width: 1.2,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: t.tint.withAlpha(30),
+                        color: artist.tint.withAlpha(30),
                         blurRadius: 16,
                       ),
                     ],
@@ -902,15 +1387,15 @@ class _ArtistRail extends StatelessWidget {
                   child: Cover(
                     size: 72,
                     radius: 36,
-                    image: t.image,
-                    tint: t.tint,
+                    image: artist.image,
+                    tint: artist.tint,
                   ),
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
                   width: 84,
                   child: Text(
-                    t.artist,
+                    artist.name,
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -932,18 +1417,67 @@ class _ArtistRail extends StatelessWidget {
 
 // ───────────────────────── Découvrir ─────────────────────────
 
-class DiscoverPage extends StatelessWidget {
+class DiscoverPage extends StatefulWidget {
+  final Library library;
   final void Function(Track) onPlay;
-  const DiscoverPage({super.key, required this.onPlay});
+  final void Function(Genre) onOpenGenre;
+
+  const DiscoverPage({
+    super.key,
+    required this.library,
+    required this.onPlay,
+    required this.onOpenGenre,
+  });
+
+  @override
+  State<DiscoverPage> createState() => _DiscoverPageState();
+}
+
+class _DiscoverPageState extends State<DiscoverPage> {
+  late final TextEditingController _searchController;
+  late final List<Track> _suggestions;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    final shuffled = List<Track>.of(widget.library.tracks)..shuffle();
+    _suggestions = shuffled.take(4).toList();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onQueryChanged(String value) {
+    final next = value.trim();
+    if (next == _query) return;
+    setState(() => _query = next);
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() => _query = '');
+  }
 
   @override
   Widget build(BuildContext context) {
+    final searching = _query.isNotEmpty;
+    final results = searching ? widget.library.search(_query) : const <Track>[];
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(0, 6, 0, _kBottomInset),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: TextField(
+            controller: _searchController,
+            onChanged: _onQueryChanged,
+            textInputAction: TextInputAction.search,
             style: const TextStyle(fontSize: 14.5),
             decoration: InputDecoration(
               hintText: 'Artistes, titres, genres…',
@@ -952,93 +1486,270 @@ class DiscoverPage extends StatelessWidget {
                 size: 20,
                 color: AppColors.faint,
               ),
-              prefixIconConstraints:
-                  const BoxConstraints(minWidth: 46, minHeight: 40),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 46,
+                minHeight: 40,
+              ),
+              suffixIcon: _searchController.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Effacer la recherche',
+                      onPressed: _clearSearch,
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 18,
+                        color: AppColors.faint,
+                      ),
+                    ),
             ),
           ),
         ),
-        const _SectionHeader('Parcourir par genre'),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: genres.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.95,
+        if (searching) ...[
+          if (results.isEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 30, 24, 2),
+              child: Column(
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(8),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.stroke),
+                    ),
+                    child: const Icon(
+                      Icons.search_off_rounded,
+                      size: 25,
+                      color: AppColors.faint,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Aucun titre trouvé',
+                    style: AppText.section.copyWith(fontSize: 17),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Essaie un autre mot ou choisis une suggestion.',
+                    textAlign: TextAlign.center,
+                    style: AppText.caption.copyWith(
+                      color: Colors.white.withAlpha(130),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            itemBuilder: (_, i) => _GenreTile(
-              label: genres[i],
-              color: genreColors[i % genreColors.length],
-              icon: genreIcons[i % genreIcons.length],
+            const _SectionHeader(
+              'Suggestions',
+              padding: EdgeInsets.fromLTRB(24, 20, 24, 6),
+            ),
+            for (final track in _suggestions)
+              _SearchTrackTile(track: track, onTap: () => widget.onPlay(track)),
+          ] else ...[
+            _SectionHeader(
+              results.length > 1
+                  ? '${results.length} titres trouvés'
+                  : '1 titre trouvé',
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 6),
+            ),
+            for (final track in results)
+              _SearchTrackTile(track: track, onTap: () => widget.onPlay(track)),
+          ],
+        ] else if (widget.library.genres.isNotEmpty) ...[
+          const _SectionHeader(
+            'Parcourir par genre',
+            padding: EdgeInsets.fromLTRB(24, 10, 24, 0),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: widget.library.genres.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 14,
+                crossAxisSpacing: 14,
+                childAspectRatio: 1.45,
+              ),
+              itemBuilder: (_, i) {
+                final genre = widget.library.genres[i];
+                return _GenreTile(
+                  genre: genre,
+                  trackCount: widget.library.tracksForGenre(genre.slug).length,
+                  onTap: () => widget.onOpenGenre(genre),
+                );
+              },
             ),
           ),
-        ),
-        const _SectionHeader('Artistes à suivre'),
-        _ArtistRail(onPlay: onPlay),
+        ],
       ],
     );
   }
 }
 
+class _SearchTrackTile extends StatelessWidget {
+  final Track track;
+  final VoidCallback onTap;
+
+  const _SearchTrackTile({required this.track, required this.onTap});
+
+  static String _format(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      child: Material(
+        color: Colors.white.withAlpha(7),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              children: [
+                Cover(
+                  size: 46,
+                  radius: 10,
+                  image: track.image,
+                  tint: track.tint,
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        track.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${track.artist} · ${_format(track.duration)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.caption,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: AppColors.green.withAlpha(26),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    size: 20,
+                    color: AppColors.greenBright,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _GenreTile extends StatelessWidget {
-  final String label;
-  final Color color;
-  final IconData icon;
+  final Genre genre;
+  final int trackCount;
+  final VoidCallback onTap;
 
   const _GenreTile({
-    required this.label,
-    required this.color,
-    required this.icon,
+    required this.genre,
+    required this.trackCount,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.all(14),
-      alignment: Alignment.bottomLeft,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.lerp(color, Colors.black, 0.18)!,
-            Color.lerp(color, Colors.black, 0.62)!,
+    final color = genre.color;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        padding: const EdgeInsets.all(16),
+        alignment: Alignment.bottomLeft,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.lerp(color, Colors.black, 0.18)!,
+              Color.lerp(color, Colors.black, 0.62)!,
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: color.withAlpha(34),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
           ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withAlpha(26),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -4,
-            bottom: -14,
-            child: Transform.rotate(
-              angle: -0.28,
-              child: Icon(icon, size: 58, color: Colors.white.withAlpha(34)),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -6,
+              bottom: -18,
+              child: Transform.rotate(
+                angle: -0.28,
+                child: Icon(
+                  genre.icon,
+                  size: 78,
+                  color: Colors.white.withAlpha(36),
+                ),
+              ),
             ),
-          ),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-              shadows: [Shadow(color: Colors.black38, blurRadius: 8)],
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  genre.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                    shadows: [Shadow(color: Colors.black38, blurRadius: 8)],
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  trackCount > 1 ? '$trackCount titres' : '$trackCount titre',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withAlpha(180),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1047,10 +1758,13 @@ class _GenreTile extends StatelessWidget {
 // ───────────────────────── Bibliothèque ─────────────────────────
 
 class LibraryPage extends StatelessWidget {
+  final Library library;
   final void Function(Track) onPlay;
   final void Function(Track) onPlayNext;
+
   const LibraryPage({
     super.key,
+    required this.library,
     required this.onPlay,
     required this.onPlayNext,
   });
@@ -1073,7 +1787,11 @@ class LibraryPage extends StatelessWidget {
           Expanded(
             child: TabBarView(
               children: [
-                _TrackList(onPlay: onPlay, onPlayNext: onPlayNext),
+                _TrackList(
+                  tracks: library.tracks,
+                  onPlay: onPlay,
+                  onPlayNext: onPlayNext,
+                ),
                 const _EmptyState(
                   icon: Icons.queue_music_rounded,
                   title: 'Aucune playlist',
@@ -1096,22 +1814,25 @@ class LibraryPage extends StatelessWidget {
 }
 
 class _TrackList extends StatelessWidget {
+  final List<Track> tracks;
   final void Function(Track) onPlay;
   final void Function(Track) onPlayNext;
-  const _TrackList({required this.onPlay, required this.onPlayNext});
+
+  const _TrackList({
+    required this.tracks,
+    required this.onPlay,
+    required this.onPlayNext,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
       padding: const EdgeInsets.only(top: 10, bottom: _kBottomInset),
-      itemCount: demoTracks.length,
-      separatorBuilder: (_, _) => const Divider(
-        indent: 112,
-        endIndent: 24,
-        height: 1,
-      ),
+      itemCount: tracks.length,
+      separatorBuilder: (_, _) =>
+          const Divider(indent: 112, endIndent: 24, height: 1),
       itemBuilder: (_, i) {
-        final t = demoTracks[i];
+        final t = tracks[i];
         return InkWell(
           onTap: () => onPlay(t),
           onLongPress: () => onPlayNext(t),
@@ -1149,7 +1870,7 @@ class _TrackList extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        t.artist,
+                        '${t.artist} · ${t.genre}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppText.caption,
