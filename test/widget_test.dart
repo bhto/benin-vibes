@@ -222,6 +222,60 @@ void main() {
     expect(field.controller?.text, 'zzzzzz');
   });
 
+  testWidgets('La bibliothèque propose Titres, Favoris et Artistes', (
+    WidgetTester tester,
+  ) async {
+    await openHome(tester);
+
+    await tester.tap(find.byIcon(Icons.library_music_outlined));
+    await tester.pumpAndSettle();
+
+    final library = find.byType(LibraryPage);
+    expect(find.text('Titres'), findsOneWidget);
+    expect(find.text('Favoris'), findsOneWidget);
+    expect(find.text('Artistes'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: library,
+        matching: find.byIcon(Icons.more_horiz_rounded),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: library, matching: find.text('Zinli Night')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: library, matching: find.text('Cotonou Vibes')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: library, matching: find.text('Gbè Mi')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Favoris'));
+    await tester.pumpAndSettle();
+    expect(find.text('Aucun favori'), findsOneWidget);
+    expect(
+      find.text('Les titres que tu aimes apparaîtront ici.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Artistes'));
+    await tester.pumpAndSettle();
+    for (final name in ['Sessimè', 'Fanicko', 'Zeynab']) {
+      expect(
+        find.descendant(of: library, matching: find.text(name)),
+        findsOneWidget,
+      );
+    }
+    expect(
+      find.descendant(of: library, matching: find.text('1 titre')),
+      findsNWidgets(3),
+    );
+  });
+
   testWidgets('La cloche ouvre le message de bienvenue', (
     WidgetTester tester,
   ) async {

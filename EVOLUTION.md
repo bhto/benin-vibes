@@ -93,9 +93,10 @@ qui charge toute la catégorie dans la file d'attente. Sans résultat, la
 recherche propose quelques titres au hasard, écoutables sans quitter la vue.
 
 ### 5. Bibliothèque
-Onglets Favoris, Playlists et Téléchargés (indicateur vert). Liste de titres
-numérotés avec pochette, titre, artiste et menu « ⋯ » ; états vides soignés
-pour les playlists et téléchargements.
+Onglets Titres, Favoris et Artistes (indicateur vert). « Titres » liste toute
+la bibliothèque en ordre aléatoire, numérotée avec pochette, titre, artiste et
+genre. « Favoris » affiche pour l'instant un état vide. « Artistes » regroupe
+les titres par artiste, avec les artistes eux-mêmes mélangés.
 
 ## État actuel
 Application fonctionnelle hors ligne : thème sombre Outfit, onboarding animé,

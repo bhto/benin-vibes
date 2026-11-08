@@ -1757,7 +1757,7 @@ class _GenreTile extends StatelessWidget {
 
 // ───────────────────────── Bibliothèque ─────────────────────────
 
-class LibraryPage extends StatelessWidget {
+class LibraryPage extends StatefulWidget {
   final Library library;
   final void Function(Track) onPlay;
   final void Function(Track) onPlayNext;
@@ -1770,6 +1770,29 @@ class LibraryPage extends StatelessWidget {
   });
 
   @override
+  State<LibraryPage> createState() => _LibraryPageState();
+}
+
+class _LibraryPageState extends State<LibraryPage> {
+  late final List<Track> _tracks;
+  late final List<_ArtistGroup> _groups;
+
+  @override
+  void initState() {
+    super.initState();
+    _tracks = List<Track>.of(widget.library.tracks)..shuffle();
+
+    final artists = List<Artist>.of(widget.library.artists)..shuffle();
+    _groups = [
+      for (final artist in artists)
+        _ArtistGroup(
+          artist: artist,
+          tracks: widget.library.tracksForArtist(artist.slug),
+        ),
+    ].where((group) => group.tracks.isNotEmpty).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 3,
@@ -1779,30 +1802,28 @@ class LibraryPage extends StatelessWidget {
             labelPadding: EdgeInsets.symmetric(horizontal: 4),
             indicatorWeight: 2,
             tabs: [
+              Tab(text: 'Titres'),
               Tab(text: 'Favoris'),
-              Tab(text: 'Playlists'),
-              Tab(text: 'Téléchargés'),
+              Tab(text: 'Artistes'),
             ],
           ),
           Expanded(
             child: TabBarView(
               children: [
                 _TrackList(
-                  tracks: library.tracks,
-                  onPlay: onPlay,
-                  onPlayNext: onPlayNext,
+                  tracks: _tracks,
+                  onPlay: widget.onPlay,
+                  onPlayNext: widget.onPlayNext,
                 ),
                 const _EmptyState(
-                  icon: Icons.queue_music_rounded,
-                  title: 'Aucune playlist',
-                  message: 'Crée ta première playlist et retrouve-la ici.',
-                  action: 'Créer une playlist',
+                  icon: Icons.favorite_border_rounded,
+                  title: 'Aucun favori',
+                  message: 'Les titres que tu aimes apparaîtront ici.',
                 ),
-                const _EmptyState(
-                  icon: Icons.cloud_download_rounded,
-                  title: 'Rien de téléchargé',
-                  message: 'Télécharge des titres pour écouter sans connexion.',
-                  action: 'Parcourir les titres',
+                _ArtistTracks(
+                  groups: _groups,
+                  onPlay: widget.onPlay,
+                  onPlayNext: widget.onPlayNext,
                 ),
               ],
             ),
@@ -1811,6 +1832,13 @@ class LibraryPage extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ArtistGroup {
+  final Artist artist;
+  final List<Track> tracks;
+
+  const _ArtistGroup({required this.artist, required this.tracks});
 }
 
 class _TrackList extends StatelessWidget {
@@ -1832,62 +1860,180 @@ class _TrackList extends StatelessWidget {
       separatorBuilder: (_, _) =>
           const Divider(indent: 112, endIndent: 24, height: 1),
       itemBuilder: (_, i) {
-        final t = tracks[i];
-        return InkWell(
-          onTap: () => onPlay(t),
-          onLongPress: () => onPlayNext(t),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 9),
-            child: Row(
+        final track = tracks[i];
+        return _TrackRow(
+          track: track,
+          number: i + 1,
+          showArtist: true,
+          onTap: () => onPlay(track),
+          onLongPress: () => onPlayNext(track),
+        );
+      },
+    );
+  }
+}
+
+class _ArtistTracks extends StatelessWidget {
+  final List<_ArtistGroup> groups;
+  final void Function(Track) onPlay;
+  final void Function(Track) onPlayNext;
+
+  const _ArtistTracks({
+    required this.groups,
+    required this.onPlay,
+    required this.onPlayNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.only(top: 8, bottom: _kBottomInset),
+      children: [
+        for (var i = 0; i < groups.length; i++) ...[
+          _ArtistHeader(group: groups[i]),
+          for (var j = 0; j < groups[i].tracks.length; j++)
+            _TrackRow(
+              track: groups[i].tracks[j],
+              number: j + 1,
+              showArtist: false,
+              showCover: false,
+              onTap: () => onPlay(groups[i].tracks[j]),
+              onLongPress: () => onPlayNext(groups[i].tracks[j]),
+            ),
+          if (i < groups.length - 1)
+            const Divider(indent: 24, endIndent: 24, height: 30),
+        ],
+      ],
+    );
+  }
+}
+
+class _ArtistHeader extends StatelessWidget {
+  final _ArtistGroup group;
+
+  const _ArtistHeader({required this.group});
+
+  @override
+  Widget build(BuildContext context) {
+    final count = group.tracks.length;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 10, 24, 8),
+      child: Row(
+        children: [
+          Cover(
+            size: 42,
+            radius: 21,
+            image: group.artist.image,
+            tint: group.artist.tint,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  width: 22,
-                  child: Text(
-                    '${i + 1}'.padLeft(2, '0'),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.faint,
-                    ),
+                Text(
+                  group.artist.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(width: 10),
-                Cover(size: 52, radius: 12, image: t.image, tint: t.tint),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        t.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${t.artist} · ${t.genre}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppText.caption,
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.more_horiz_rounded,
-                  size: 20,
-                  color: AppColors.faint,
+                const SizedBox(height: 2),
+                Text(
+                  count > 1 ? '$count titres' : '1 titre',
+                  style: AppText.caption,
                 ),
               ],
             ),
           ),
-        );
-      },
+        ],
+      ),
+    );
+  }
+}
+
+class _TrackRow extends StatelessWidget {
+  final Track track;
+  final int number;
+  final bool showArtist;
+  final bool showCover;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  const _TrackRow({
+    required this.track,
+    required this.number,
+    required this.onTap,
+    required this.onLongPress,
+    this.showArtist = true,
+    this.showCover = true,
+  });
+
+  static String _format(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = showArtist
+        ? '${track.artist} · ${track.genre}'
+        : '${track.genre} · ${_format(track.duration)}';
+
+    return InkWell(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 9),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 22,
+              child: Text(
+                '$number'.padLeft(2, '0'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.faint,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            if (showCover) ...[
+              Cover(size: 52, radius: 12, image: track.image, tint: track.tint),
+              const SizedBox(width: 14),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    track.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.caption,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1896,13 +2042,11 @@ class _EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String message;
-  final String action;
 
   const _EmptyState({
     required this.icon,
     required this.title,
     required this.message,
-    required this.action,
   });
 
   @override
@@ -1938,8 +2082,6 @@ class _EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: AppText.caption.copyWith(height: 1.5),
             ),
-            const SizedBox(height: 18),
-            OutlinedButton(onPressed: () {}, child: Text(action)),
           ],
         ),
       ),
